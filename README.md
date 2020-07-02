@@ -1,5 +1,5 @@
 # PWP SUMMER 2020
-# party planner
+# notikums - event organizing API
 # Group information
 * Student 1. Joel
 * Student 2. Lauri
