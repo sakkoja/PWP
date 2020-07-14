@@ -9,8 +9,9 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-class Users(db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey("event.id"))
     user_token = db.Column(db.String(64), nullable=False)
     user_name = db.Column(db.String(64), nullable=False)
     first_name = db.Column(db.String(64), nullable=True)
@@ -18,13 +19,13 @@ class Users(db.Model):
     email = db.Column(db.String(64), nullable=True)
     phone = db.Column(db.String(16), nullable=True)
 
-    participants = db.relationship("Events", back_populates="attendees")
+    event = db.relationship("Event", back_populates="attendees")
 
     # def __repr__(self):
     #     return "{}".format(self.id, self.user_token)
 
 
-class Events(db.Model):
+class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     creator_name = db.Column(db.String(64), nullable=True)
     creator_token = db.Column(db.Integer, nullable=False)
@@ -32,23 +33,24 @@ class Events(db.Model):
     description = db.Column(db.String(256), nullable=True)
     time = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(64), nullable=False)
-    image = db.Column(db.Integer, db.ForeignKey("image.id"))
+    image_id = db.Column(db.Integer, db.ForeignKey("image.id"), nullable=True)
 
-    attendees = db.relationship("Users", back_populates="participants")
-    image = db.relationship("Images", back_populates="event")
+    attendees = db.relationship("User", back_populates="event")
+    image = db.relationship("Image", back_populates="event")
 
     # def __repr__(self):
     #     return "{},{},{},{}".format(self.product_id, self.id, self.qty, self.location)
 
 
-class Images(db.Model):
+class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(256), nullable=False)
 
-    event = db.relationship("Events", back_populates="image")
+    event = db.relationship("Event", back_populates="image")
 
 
-db.create_all()
+def initialize_empty_database():
+    db.create_all()
 
 
 @app.route("/", methods=["GET"])
