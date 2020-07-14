@@ -11,42 +11,41 @@ db = SQLAlchemy(app)
 
 class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
     user_token = db.Column(db.String(64), nullable=False)
-    user_name = db.Column(db.String, nullable=False)
+    user_name = db.Column(db.String(64), nullable=False)
     first_name = db.Column(db.String(64), nullable=True)
     last_name = db.Column(db.String(64), nullable=True)
-    email = db.columnk(db.String(64), nullable=True)
-    phone = db.columnk(db.String(16), nullable=True)
+    email = db.Column(db.String(64), nullable=True)
+    phone = db.Column(db.String(16), nullable=True)
 
     participants = db.relationship("Events", back_populates="attendees")
 
-    def __repr__(self):
-        return "{}".format(self.id, self.user_token)
+    # def __repr__(self):
+    #     return "{}".format(self.id, self.user_token)
 
 
 class Events(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    creator_name = db.Column(db.String(64), nullable=False)
+    creator_name = db.Column(db.String(64), nullable=True)
     creator_token = db.Column(db.Integer, nullable=False)
     title = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.String(256), nullable=False)
+    description = db.Column(db.String(256), nullable=True)
     time = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(64), nullable=False)
     image = db.Column(db.Integer, db.ForeignKey("image.id"))
 
     attendees = db.relationship("Users", back_populates="participants")
-    image = db.relationship("Images", backpopulates="event")
+    image = db.relationship("Images", back_populates="event")
 
-    def __repr__(self):
-        return "{},{},{},{}".format(self.product_id, self.id, self.qty, self.location)
+    # def __repr__(self):
+    #     return "{},{},{},{}".format(self.product_id, self.id, self.qty, self.location)
 
 
 class Images(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(256), nullable=False)
 
-    event = db.relationship("Events", )
+    event = db.relationship("Events", back_populates="image")
 
 
 db.create_all()
@@ -77,7 +76,7 @@ def event_attendees(event_id):
 
 
 @app.route("/event/<event_id>/image", methods=["GET", "POST", "DELETE"])
-def event_description(event_id):
+def event_image(event_id):
     """get (GET), add (POST) or delete (DELETE) event image"""
     return "Notikums temp page", 200
 
