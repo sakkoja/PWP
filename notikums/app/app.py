@@ -11,8 +11,11 @@ db = SQLAlchemy(app)
 
 class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_token = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    user_token = db.Column(db.String(64), nullable=False)
     user_name = db.Column(db.String, nullable=False)
+    first_name = db.Column(db.String(64), nullable=True)
+    last_name = db.Column(db.String(64), nullable=True)
     email = db.columnk(db.String(64), nullable=True)
     phone = db.columnk(db.String(16), nullable=True)
 
@@ -30,11 +33,20 @@ class Events(db.Model):
     description = db.Column(db.String(256), nullable=False)
     time = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(64), nullable=False)
+    image = db.Column(db.Integer, db.ForeignKey("image.id"))
 
     attendees = db.relationship("Users", back_populates="participants")
+    image = db.relationship("Images", backpopulates="event")
 
     def __repr__(self):
         return "{},{},{},{}".format(self.product_id, self.id, self.qty, self.location)
+
+
+class Images(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String(256), nullable=False)
+
+    event = db.relationship("Events", )
 
 
 db.create_all()
