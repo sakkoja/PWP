@@ -44,7 +44,7 @@ class Event(db.Model):
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    path = db.Column(db.String(256), nullable=False)
+    url = db.Column(db.String(256), nullable=False)
 
     event = db.relationship("Event", back_populates="image")
 

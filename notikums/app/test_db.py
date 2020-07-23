@@ -51,7 +51,7 @@ def test_create_event(db_handle):
 
 
 def test_create_image(db_handle):
-    image = Image(path="/dev/null")
+    image = Image(url="http://localhost:5000/dev/null")
     db_handle.session.add(image)
     db_handle.session.commit()
     assert Image.query.count() == 1
