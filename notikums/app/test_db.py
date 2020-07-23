@@ -7,6 +7,7 @@ from app import User, Event, Image
 from datetime import datetime
 from sqlalchemy.engine import Engine
 from sqlalchemy import event
+from sqlalchemy.exc import IntegrityError
 
 @pytest.fixture
 def basic_setup():
@@ -36,22 +37,83 @@ def db_handle():
 
 # tests
 
-def test_create_users(db_handle):
+
+def test_create_users_positive(db_handle):
     user = User(user_token="token", user_name="user_name")
     db_handle.session.add(user)
     db_handle.session.commit()
     assert User.query.count() == 1
 
 
-def test_create_event(db_handle):
+def test_create_event_positive(db_handle):
     event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here")
     db_handle.session.add(event)
     db_handle.session.commit()
     assert Event.query.count() == 1
 
 
-def test_create_image(db_handle):
+def test_create_image_positive(db_handle):
     image = Image(url="http://localhost:5000/dev/null")
     db_handle.session.add(image)
     db_handle.session.commit()
     assert Image.query.count() == 1
+
+
+def test_create_users_negative(db_handle):
+    # test that invalid users can't be added to the database
+    users = [
+        User(),
+        User(user_token="token", user_name=None),
+        User(user_token=None, user_name="user_name"),
+        # User(user_token="a" * 120, user_name="user_name"),  # do we want to enforce the lenght of columns? https://stackoverflow.com/questions/2317081/sqlalchemy-maximum-column-length
+    ]
+    for user in users:
+        with pytest.raises(IntegrityError):
+            db_handle.session.add(user)
+            db_handle.session.commit()
+        db_handle.session.rollback()
+
+
+def test_create_event_negative(db_handle):
+    events = [
+        Event(),
+        Event(creator_token="token", title="test event", time=datetime.utcnow(), location=None),
+        Event(creator_token="token", title="test event", time=None, location="here"),
+        Event(creator_token="token", title=None, time=datetime.utcnow(), location="here"),
+        Event(creator_token=None, title="test event", time=datetime.utcnow(), location="here"),
+        # Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", ),
+    ]
+    for event in events:
+        with pytest.raises(IntegrityError):
+            db_handle.session.add(event)
+            db_handle.session.commit()
+        db_handle.session.rollback()
+
+
+def test_create_image_negative(db_handle):
+    with pytest.raises(IntegrityError):
+        db_handle.session.add(Image())
+        db_handle.session.commit()
+
+
+def test_create_event_attendee(db_handle):
+    event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here")
+    attendee = User(user_token="token", user_name="user_name")
+    # add the event for the attendee, should back populate to the events
+    attendee.event = event
+    db_handle.session.add(event)
+    db_handle.session.add(attendee)
+    db_handle.session.commit()
+    assert Event.query.first().attendees[0] == attendee
+#   event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here")
+#     attendees = []
+#     for i in range(5):
+#         attendee = User(user_token="token", user_name="user_name_" + str(i)
+#         attendee.event = event
+#         attendees.append(attendee)
+
+#     # add the event for the attendee, should back populate to the events
+#     # db_handle.session.add(event)
+#     # db_handle.session.add(attendee)
+#     # db_handle.session.commit()
+#     assert Event.query.first().attendees[0] == attendee
