@@ -59,20 +59,57 @@ def index():
     return "Notikums temp page", 200
 
 
-@app.route("/event", methods=["POST"])
+@app.route("/event", methods=["GET", "POST"])
 def create_event():
-    """Send POST request to create event"""
+    """Get list of incoming events or send POST request to create event"""
+    # GET response
+    # {
+    #     "event_list": {
+    #         "event1": {
+    #             "title": "EventOne",
+    #             "creator_name": "OrganizerOne",
+    #             "time": "2020-01-01T00:00:00",
+    #             "location": "LocationOne"
+    #         },
+    #         "event2": {
+    #             "title": "EventTwo",
+    #             "creator_name": "OrganizerTwo",
+    #             "time": "2020-01-01T00:00:00",
+    #             "location": "LocationTwo"
+    #         }
+    #     }
+    # }
+
+    # POST response
+    # {
+    #     "creator_token":"tokenOne123dsa123s13dsa321dsa"
+    # }
+
     return "Notikums temp page", 200
 
 
 @app.route("/event/<event_id>", methods=["GET", "PUT", "DELETE"])
 def modify_event(event_id):
     """Get event info (GET), modify event (PUT), delete event (DELETE)"""
+    # GET response
+
+    # {
+    #     "event": {
+    #         "title": "EventOne",
+    #         "creator_name": "OrganizerOne",
+    #         "time": "2020-01-01T00:00:00",
+    #         "location": "LocationOne",
+    #         "description": "This is an event",
+    #         "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    #     }
+    # }
+
+
     return "Notikums temp page", 200
 
 
-@app.route("/event/<event_id>/attendees", methods=["GET", "PUT", "POST", "DELETE"])
-def event_attendees(event_id):
+@app.route("/event/<event_id>/attendee", methods=["GET", "PUT", "POST", "DELETE"])
+def event_attendee(event_id):
     """Event's attendeee list, only visible to event's creator"""
     return "Notikums temp page", 200
 
