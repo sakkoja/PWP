@@ -109,38 +109,13 @@ def modify_event(event_id):
     return "Notikums temp page", 200
 
 
-@app.route("/event/<event_id>/attendee", methods=["GET", "PUT", "POST", "DELETE"])
-def event_attendee(event_id):
-    """Event's attendeee list, only visible to event's creator"""
+@app.route("/event/<event_id>/attendee", methods=["GET", "POST"])
+def event_attendee_list(event_id):
+    """Event's attendee list, only visible to event's creator"""
     # GET Requests
     #
     # Headers
-    # Authorization: Basic asd123creatortokenforevent1
-
-    # POST Requests
-    #
-    # Headers
-    # Content-Type: application/json
-    #
-    # Body
-
-
-
-
-    # DELETE Requests
-    #
-    # Headers
-    # Authorization: Basic asd123creatortokenforevent1
-    # Content-Type: application/json
-
-    event_id = db.Column(db.Integer, db.ForeignKey("event.id"))
-    user_token = db.Column(db.String(64), nullable=False)
-    user_name = db.Column(db.String(64), nullable=False)
-    first_name = db.Column(db.String(64), nullable=True)
-    last_name = db.Column(db.String(64), nullable=True)
-    email = db.Column(db.String(64), nullable=True)
-    phone = db.Column(db.String(16), nullable=True)
-
+    # Authorization: Basic <creator_token>
 
     # GET responses
     # {
@@ -171,17 +146,82 @@ def event_attendee(event_id):
     return "Not Found", 404
 
 
-    # POST Responses
+    # POST Requests
+    #
+    # Headers
+    # Content-Type: application/json
+    #
+    # Body
+    # {
+    #     "user_name": "userone"
+    #     "first_name": "Firstname-One",
+    #     "last_name": "Lastname-One",
+    #     "email": "userone@mail.email",
+    #     "phone": "+358100000000"
+    # }
 
+    # POST Responses
+    # 
     # {
     #     "event_id": "event1",
-    #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    #     "user_name": "userone"
+    #     "user_token": "asd321usertokenforevent1"
     # }
     return "Created", 201
 
     # nothing
+    return "Bad Request", 400
+
+    # nothing
     return "Not Found", 404
 
+
+@app.route("/event/<event_id>/attendee/<user_name>", methods=["GET", "PUT", "DELETE"])
+def event_attendee(event_id):
+    """Event's attendees, visible to event's creator and attendee him/herself"""
+    # GET Requests
+    #
+    # Headers
+    # Authorization: Basic <creator_token> OR <user_token>
+
+    # GET responses
+    # 
+    # {
+    #     "user_name": "userone"
+    #     "first_name": "Firstname-One",
+    #     "last_name": "Lastname-One",
+    #     "email": "userone@mail.email",
+    #     "phone": "+358100000000"
+    # }
+    return "OK", 200
+
+    # nothing
+    return "Unauthorized", 401
+
+    # nothing
+    return "Not Found", 404
+
+
+    # PUT Requests
+    #
+    # Headers
+    # Authorization: Basic <user_token> OR <creator_token>
+    # Content-Type: application/json
+    #
+    # Body
+    # {
+    #     "user_name": "userone"
+    #     "first_name": "Firstname-One",
+    #     "last_name": "Lastname-One",
+    #     "email": "userone@mail.email",
+    #     "phone": "+358100000000"
+    # }
+
+
+    # DELETE Requests
+    #
+    # Headers
+    # Authorization: Basic <user_token> OR <creator_token>
 
     # DELETE Responses
     return "OK", 204
@@ -191,9 +231,6 @@ def event_attendee(event_id):
 
     # nothing
     return "Not Found", 404
-
-
-
 
 
 @app.route("/event/<event_id>/image", methods=["GET", "POST", "DELETE"])
