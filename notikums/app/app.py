@@ -94,7 +94,8 @@ def modify_event(event_id):
     # GET response
 
     # {
-    #     "event_id": {
+    #     "event_id": "event1",
+    #     "event": {
     #         "title": "EventOne",
     #         "creator_name": "OrganizerOne",
     #         "time": "2020-01-01T00:00:00",
@@ -132,13 +133,39 @@ def event_attendee(event_id):
     # Authorization: Basic asd123creatortokenforevent1
     # Content-Type: application/json
 
+    event_id = db.Column(db.Integer, db.ForeignKey("event.id"))
+    user_token = db.Column(db.String(64), nullable=False)
+    user_name = db.Column(db.String(64), nullable=False)
+    first_name = db.Column(db.String(64), nullable=True)
+    last_name = db.Column(db.String(64), nullable=True)
+    email = db.Column(db.String(64), nullable=True)
+    phone = db.Column(db.String(16), nullable=True)
+
 
     # GET responses
     # {
     #     "event_id": "event1",
-    #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    #     "attendee_list": {
+    #         "user1": {
+    #             "user_name": "user_name1",
+    #             "first_name": "Firstname-One",
+    #             "last_name": "Lastname-One",
+    #             "email": "userone@mail.email",
+    #             "phone": "+358100000000"
+    #         },
+    #         "user2": {
+    #             "user_name": "user_name2",
+    #             "first_name": "Firstname-Two",
+    #             "last_name": "Lastname-Two",
+    #             "email": "usertwo@mail.email",
+    #             "phone": "+358100000001"
+    #         }
+    #     }
     # }
     return "OK", 200
+
+    # nothing
+    return "Unauthorized", 401
 
     # nothing
     return "Not Found", 404
@@ -151,9 +178,6 @@ def event_attendee(event_id):
     #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
     # }
     return "Created", 201
-
-    # nothing
-    return "Unauthorized", 401
 
     # nothing
     return "Not Found", 404
