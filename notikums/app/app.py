@@ -94,7 +94,7 @@ def modify_event(event_id):
     # GET response
 
     # {
-    #     "event": {
+    #     "event_id": {
     #         "title": "EventOne",
     #         "creator_name": "OrganizerOne",
     #         "time": "2020-01-01T00:00:00",
@@ -111,28 +111,161 @@ def modify_event(event_id):
 @app.route("/event/<event_id>/attendee", methods=["GET", "PUT", "POST", "DELETE"])
 def event_attendee(event_id):
     """Event's attendeee list, only visible to event's creator"""
-    return "Notikums temp page", 200
+    # GET Requests
+    #
+    # Headers
+    # Authorization: Basic asd123creatortokenforevent1
+
+    # POST Requests
+    #
+    # Headers
+    # Content-Type: application/json
+    #
+    # Body
+
+
+
+
+    # DELETE Requests
+    #
+    # Headers
+    # Authorization: Basic asd123creatortokenforevent1
+    # Content-Type: application/json
+
+
+    # GET responses
+    # {
+    #     "event_id": "event1",
+    #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    # }
+    return "OK", 200
+
+    # nothing
+    return "Not Found", 404
+
+
+    # POST Responses
+
+    # {
+    #     "event_id": "event1",
+    #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    # }
+    return "Created", 201
+
+    # nothing
+    return "Unauthorized", 401
+
+    # nothing
+    return "Not Found", 404
+
+
+    # DELETE Responses
+    return "OK", 204
+
+    # nothing
+    return "Unauthorized", 401
+
+    # nothing
+    return "Not Found", 404
+
+
+
 
 
 @app.route("/event/<event_id>/image", methods=["GET", "POST", "DELETE"])
 def event_image(event_id):
     """get (GET), add (POST) or delete (DELETE) event image"""
-    return "Notikums temp page", 200
+    # POST Requests
+    #
+    # Headers
+    # Authorization: Basic asd123creatortokenforevent1
+    # Content-Type: application/json
+    #
+    # Body
+    # "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    
+    # DELETE Requests
+    #
+    # Headers
+    # Authorization: Basic asd123creatortokenforevent1
+    # Content-Type: application/json
 
+
+    # GET responses
+    # {
+    #     "event_id": "event1",
+    #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    # }
+    return "OK", 200
+
+    # nothing
+    return "Not Found", 404
+
+
+    # POST Responses
+
+    # {
+    #     "event_id": "event1",
+    #     "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+    # }
+    return "Created", 201
+
+    # nothing
+    return "Unauthorized", 401
+
+    # nothing
+    return "Not Found", 404
+
+
+    # DELETE Responses
+    return "OK", 204
+
+    # nothing
+    return "Unauthorized", 401
+
+    # nothing
+    return "Not Found", 404
 
 @app.route("/event/<event_id>/description", methods=["GET"])
 def event_description(event_id):
     """Get event description"""
-    return "Notikums temp page", 200
+
+    # GET Responses
+    # {
+    #     "event_id": "event1",
+    #     "description": "This is an event"
+    # }
+    return "OK", 200
+
+    # nothing
+    return "Not Found", 404
 
 
 @app.route("/event/<event_id>/location", methods=["GET"])
 def event_location(event_id):
     """Get event location (GET)"""
-    return "Notikums temp page", 200
+
+    # GEt Responses
+    # {
+    #     "event_id": "event1",
+    #     "location": "LocationOne"
+    # }
+    return "OK", 200
+
+    # nothing
+    return "Not Found", 404
 
 
 @app.route("/event/<event_id>/time", methods=["GET"])
 def event_time(event_id):
     """Get event time (GET)"""
-    return "Notikums temp page", 200
+
+    # GET Responses
+    # {
+    #     "event_id": "event1",
+    #     "time": "2020-01-01T00:00:00"
+    # }
+    return "OK", 200
+
+    # nothing
+    return "Not Found", 404
