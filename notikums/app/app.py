@@ -1,9 +1,11 @@
-import json
+import json, datetime, random, string
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
+from flask_restful import Resource, Api
 
 app = Flask(__name__)
+api = Api(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
@@ -33,59 +35,91 @@ class Event(db.Model):
     description = db.Column(db.String(256), nullable=True)
     time = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(64), nullable=False)
-    image_id = db.Column(db.Integer, db.ForeignKey("image.id"), nullable=True)
+    image =  db.Column(db.String(256), nullable=True)
 
     attendees = db.relationship("User", back_populates="event")
-    image = db.relationship("Image", back_populates="event")
 
     # def __repr__(self):
-    #     return "{},{},{},{}".format(self.product_id, self.id, self.qty, self.location)
-
-
-class Image(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    url = db.Column(db.String(256), nullable=False)
-
-    event = db.relationship("Event", back_populates="image")
-
+    #     return "{},{},{},{}".format(self.id, self.title, self.time, self.location, self.creator_name, self.description)
 
 def initialize_empty_database():
     db.create_all()
 
 
-@app.route("/", methods=["GET"])
-def index():
-    """Notikums landing page"""
-    return "Notikums temp page", 200
+class ApiRoot(Resource):
+
+    def get(self):
+        """Notikums landing page and descriptions"""
+        return "Well hello there. TODO: add apiary link here", 200
 
 
-@app.route("/event", methods=["GET", "POST"])
-def create_event():
-    """Get list of incoming events or send POST request to create event"""
-    # GET response
-    # {
-    #     "event_list": {
-    #         "event1": {
-    #             "title": "EventOne",
-    #             "creator_name": "OrganizerOne",
-    #             "time": "2020-01-01T00:00:00",
-    #             "location": "LocationOne"
-    #         },
-    #         "event2": {
-    #             "title": "EventTwo",
-    #             "creator_name": "OrganizerTwo",
-    #             "time": "2020-01-01T00:00:00",
-    #             "location": "LocationTwo"
-    #         }
-    #     }
-    # }
+class EventCollection(Resource):
 
-    # POST response
-    # {
-    #     "creator_token":"tokenOne123dsa123s13dsa321dsa"
-    # }
+    def get(self):
+        """get list of all incoming events as JSON array"""
+        try:
+            response_data = []
+            response_template = json.dumps(
+                {
+                    "title":"",
+                    "time":"",
+                    "location":"",
+                    "creator_name":"",
+                    "description":"",
+                    "image":""
+                })
+            event_list = Event.query.all()
+            for item in event_list:
+                response_json = json.loads(response_template)
+                response_json["title"] = item.title
+                response_json["time"] = (item.time).strftime("%Y-%m-%dT%H:%M:%S%z")
+                response_json["location"] = item.location
+                response_json["creator_name"] = item.creator_name
+                response_json["description"] = item.description
+                response_json["image"] = item.image
+                response_data.append(response_json)
+            return response_data, 200
+        except (KeyError, ValueError, IntegrityError, OperationalError):
+            return "General error o7", 400
 
-    return "Notikums temp page", 200
+
+    def post(self):
+        """create new event"""
+        if not request.json:
+            return "Request content type must be JSON", 415
+        try:
+            event_title = request.json["title"]
+            event_time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
+            event_location = request.json["location"]
+            event_creator_name = request.json["creator_name"]
+            event_description = request.json["description"]
+            event_image = request.json["image"]
+            event_creator_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
+            new_event = Event(
+                title=event_title,
+                time=event_time,
+                location=event_location,
+                creator_name=event_creator_name,
+                creator_token=event_creator_token,
+                description=event_description,
+                image=event_image
+            )
+            db.session.add(new_event)
+            db.session.commit()
+            return "Event {} added, use creator token {} to modify it.".format(event_title, event_creator_token), 201
+        except (KeyError, ValueError, IntegrityError, OperationalError):
+            return "Incomplete request - missing fields", 400
+
+
+initialize_empty_database()
+api.add_resource(ApiRoot, "/")
+api.add_resource(EventCollection, "/event")
+
+
+# @app.route("/", methods=["GET"])
+# def index():
+#     """Notikums landing page"""
+#     return "Notikums temp page", 200
 
 
 @app.route("/event/<event_id>", methods=["GET", "PUT", "DELETE"])
