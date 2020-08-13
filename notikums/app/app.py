@@ -29,6 +29,7 @@ class User(db.Model):
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    identifier = db.Column(db.String(8), unique=True, nullable=False) #this is exposed in API to identify events
     creator_name = db.Column(db.String(64), nullable=True)
     creator_token = db.Column(db.Integer, nullable=False)
     title = db.Column(db.String(128), nullable=False)
@@ -62,6 +63,7 @@ class EventCollection(Resource):
             response_template = json.dumps(
                 {
                     "title":"",
+                    "identifier":"",
                     "time":"",
                     "location":"",
                     "creator_name":"",
@@ -72,6 +74,7 @@ class EventCollection(Resource):
             for item in event_list:
                 response_json = json.loads(response_template)
                 response_json["title"] = item.title
+                response_json["identifier"] = item.identifier
                 response_json["time"] = (item.time).strftime("%Y-%m-%dT%H:%M:%S%z")
                 response_json["location"] = item.location
                 response_json["creator_name"] = item.creator_name
@@ -95,8 +98,10 @@ class EventCollection(Resource):
             event_description = request.json["description"]
             event_image = request.json["image"]
             event_creator_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
+            event_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
             new_event = Event(
                 title=event_title,
+                identifier=event_identifier,
                 time=event_time,
                 location=event_location,
                 creator_name=event_creator_name,
@@ -106,41 +111,118 @@ class EventCollection(Resource):
             )
             db.session.add(new_event)
             db.session.commit()
-            return "Event {} added, use creator token {} to modify it.".format(event_title, event_creator_token), 201
+            event_data = Event.query.filter_by(identifier=event_identifier).first()
+            response_template = json.dumps(
+                {
+                    "creator_token": "",
+                    "title":"",
+                    "identifier":""
+                })
+            response_json = json.loads(response_template)
+            response_json["creator_token"] = event_data.creator_token
+            response_json["title"] = event_data.title
+            response_json["identifier"] = event_data.identifier
+            return response_json, 201
+        except (KeyError, ValueError, OperationalError):
+            return "Incomplete request - missing fields", 400
+
+class EventItem(Resource):
+
+    def get(self, event_id):
+        """get specific event by id as JSON array"""
+        try:
+            response_template = json.dumps(
+                {
+                    "title":"",
+                    "identifier":"",
+                    "time":"",
+                    "location":"",
+                    "creator_name":"",
+                    "description":"",
+                    "image":""
+                })
+            event_data = Event.query.filter_by(identifier=event_id).first()
+            response_json = json.loads(response_template)
+            response_json["title"] = event_data.title
+            response_json["identifier"] = event_data.identifier
+            response_json["time"] = (event_data.time).strftime("%Y-%m-%dT%H:%M:%S%z")
+            response_json["location"] = event_data.location
+            response_json["creator_name"] = event_data.creator_name
+            response_json["description"] = event_data.description
+            response_json["image"] = event_data.image
+            return response_json, 200
+        except AttributeError:
+            return "Event not found", 404
+        except (KeyError, ValueError, IntegrityError, OperationalError):
+            return "General error o7", 400
+
+
+    def put(self, event_id):
+        """modify event"""
+        if not request.json:
+            return "Request content type must be JSON", 415
+        event_token = Event.query.filter_by(identifier=event_id).first()
+        if request.headers.get("Authorization") != ("Basic " + event_token.creator_token):
+            return 401
+        try:
+            event_title = request.json["title"]
+            event_time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
+            event_location = request.json["location"]
+            event_creator_name = request.json["creator_name"]
+            event_description = request.json["description"]
+            event_image = request.json["image"]
+            event_data = Event.query.filter_by(identifier=event_id).first()
+            #TODO: add check to what values to update
+            event_data.title = event_title
+            event_data.time = event_time
+            event_data.location = event_location
+            event_data.creator_name = event_creator_name
+            event_data.description = event_description
+            event_data.image = event_image
+            db.session.commit()
+            return 201
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "Incomplete request - missing fields", 400
 
 
-initialize_empty_database()
+    def delete(self, event_id):
+        """delete event"""
+        try:
+            event_token = Event.query.filter_by(identifier=event_id).first()
+            if request.headers.get("Authorization") != ("Basic " + event_token.creator_token):
+                return 401
+            Event.query.filter_by(identifier=event_id).delete()
+            db.session.commit()
+            return 204
+        except AttributeError:
+            return "Event not found", 404
+
+
+db.create_all()
 api.add_resource(ApiRoot, "/")
 api.add_resource(EventCollection, "/event")
+api.add_resource(EventItem, "/event/<event_id>")
 
 
-# @app.route("/", methods=["GET"])
-# def index():
-#     """Notikums landing page"""
+# @app.route("/event/<event_id>", methods=["GET", "PUT", "DELETE"])
+# def modify_event(event_id):
+#     """Get event info (GET), modify event (PUT), delete event (DELETE)"""
+#     # GET response
+
+#     # {
+#     #     "event_id": "event1",
+#     #     "event": {
+#     #         "title": "EventOne",
+#     #         "creator_name": "OrganizerOne",
+#     #         "time": "2020-01-01T00:00:00",
+#     #         "location": "LocationOne",
+#     #         "description": "This is an event",
+#     #         "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
+#     #     }
+#     # }
+
+
 #     return "Notikums temp page", 200
-
-
-@app.route("/event/<event_id>", methods=["GET", "PUT", "DELETE"])
-def modify_event(event_id):
-    """Get event info (GET), modify event (PUT), delete event (DELETE)"""
-    # GET response
-
-    # {
-    #     "event_id": "event1",
-    #     "event": {
-    #         "title": "EventOne",
-    #         "creator_name": "OrganizerOne",
-    #         "time": "2020-01-01T00:00:00",
-    #         "location": "LocationOne",
-    #         "description": "This is an event",
-    #         "image": "https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg"
-    #     }
-    # }
-
-
-    return "Notikums temp page", 200
 
 
 @app.route("/event/<event_id>/attendee", methods=["GET", "POST"])
