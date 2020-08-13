@@ -1,14 +1,64 @@
-import json, datetime, random, string
+import json, datetime, random, string, jsonschema
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
 from flask_restful import Resource, Api
+from jsonschema import validate
 
 app = Flask(__name__)
 api = Api(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+
+
+### utility
+def validate_json(jsonData, jsonSchema):
+    try:
+        validate(instance=jsonData, schema=jsonSchema)
+    except jsonschema.exceptions.ValidationError as err:
+        return False
+    return True
+
+### schemas
+def post_schema():
+        schema = {
+            "type": "object",
+            "required": ["title", "time", "location"],
+            # "optional": ["creator_name", "description", "image"]
+        }
+        props = schema["properties"] = {}
+        props["title"] = {
+            "description": "Item's unique name",
+            "type": "string",
+            "maxLength": 128
+        }
+        props["time"] = {
+            "description": "Weight of the item",
+            "type": "date-time"
+        }
+        props["location"] = {
+            "description": "Price of the item",
+            "type": "string",
+            "maxLength": 64
+        }
+        props["creator_name"] = {
+            "description": "Item's unique name",
+            "type": "string",
+            "maxLength": 64
+        }
+        props["description"] = {
+            "description": "Weight of the item",
+            "type": "string",
+            "maxLength": 256
+        }
+        props["image"] = {
+            "description": "Price of the item",
+            "type": "string",
+            # "minLength": 0,
+            "maxLength": 256
+        }
+        return schema
 
 
 class User(db.Model):
@@ -88,7 +138,7 @@ class EventCollection(Resource):
 
     def post(self):
         """create new event"""
-        if not request.json:
+        if not request.json or not validate_json(request.json, post_schema()):
             return "Request content type must be JSON", 415
         try:
             event_title = request.json["title"]
