@@ -101,6 +101,7 @@ def image_post_schema():
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey("event.id"))
+    user_identifier = db.Column(db.String(8), unique=True, nullable=False) #this is exposed in API to identify users
     user_token = db.Column(db.String(64), nullable=False)
     user_name = db.Column(db.String(64), nullable=False)
     first_name = db.Column(db.String(64), nullable=True)
@@ -351,24 +352,28 @@ class AttendeeCollection(Resource):
 
     def get(self, event_identifier):
         """get list of all attendees to specific event as JSON array"""
+
         event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
-        if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_identifier).first().creator_token):
-            return 401
+
+        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+            return "Authentication failed", 401
+
         try:
             response_data = []
             response_template = json.dumps(
                 {
+                    "user_identifier":"",
                     "user_name":"",
                     "first_name":"",
                     "last_name":"",
                     "email":"",
                     "phone":""
                 })
-            attended_event = Event.query.filter_by(identifier=event_identifier).first()
-            for attendee in attended_event.attendees:
+            for attendee in event_item.attendees:
                 response_json = json.loads(response_template)
+                response_json["user_identifier"] = attendee.user_identifier
                 response_json["user_name"] = attendee.user_name
                 response_json["first_name"] = attendee.first_name
                 response_json["last_name"] = attendee.last_name
@@ -376,14 +381,13 @@ class AttendeeCollection(Resource):
                 response_json["phone"] = attendee.phone
                 response_data.append(response_json)
             return response_data, 200
-#            return attended_event.attendees, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "General error o7", 400
 
 
     def post(self, event_identifier):
         """create new attendee to specific event"""
-        event_item = Event.query.filter_by(identifier=event_id).first()
+        event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
         if not request.json:
@@ -394,9 +398,12 @@ class AttendeeCollection(Resource):
             attendee_last_name = request.json["last_name"]
             attendee_email = request.json["email"]
             attendee_phone = request.json["phone"]
-            attendee_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
+            attendee_user_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
+            attendee_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
             new_attendee = User(
+                event=event_item,
                 event_id=event_identifier,
+                user_identifier=attendee_user_identifier,
                 user_token=attendee_token,
                 user_name=attendee_user_name,
                 first_name=attendee_first_name,
@@ -406,12 +413,16 @@ class AttendeeCollection(Resource):
             )
             db.session.add(new_attendee)
             db.session.commit()
-            user_data = User.query.filter_by(event_id=event_identifier).first()
+            # import pdb
+            # pdb.set_trace()
+            user_data = User.query.filter_by(user_identifier=attendee_user_identifier).first()
             response_template = json.dumps(
                 {
+                    "user_identifier":"",
                     "user_token": ""
                 })
             response_json = json.loads(response_template)
+            response_json["user_identifier"] = user_data.user_identifier
             response_json["user_token"] = user_data.user_token
             return response_json, 201
         except (KeyError, ValueError, OperationalError):
@@ -476,10 +487,48 @@ class AttendeeItem(Resource):
 #     # nothing
 #     return "Not Found", 404
 
-    def get(self):
+    def get(self, event_identifier, attendee_id):
+        """get information of one attendee as JSON array"""
+
+        event_item = Event.query.filter_by(identifier=event_identifier).first()
+        if not event_item:
+            return "Event not found", 404
+
+        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+            return "Authentication failed", 401
+
+        attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
+        if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token)
+            return "authentication failed", 401
+
+        try:
+            response_data = []
+            response_template = json.dumps(
+                {
+                    "user_identifier":"",
+                    "user_name":"",
+                    "first_name":"",
+                    "last_name":"",
+                    "email":"",
+                    "phone":""
+                })
+            for attendee in event_item.attendees:
+                response_json = json.loads(response_template)
+                response_json["user_identifier"] = attendee.user_identifier
+                response_json["user_name"] = attendee.user_name
+                response_json["first_name"] = attendee.first_name
+                response_json["last_name"] = attendee.last_name
+                response_json["email"] = attendee.email
+                response_json["phone"] = attendee.phone
+                response_data.append(response_json)
+            return response_data, 200
+        except (KeyError, ValueError, IntegrityError, OperationalError):
+            return "General error o7", 400
+
+    def put(self, event_identifier, attendee_id):
         pass
 
-    def post(self):
+    def delete(self, event_identifier, attendee_id):
         pass
 
 
@@ -657,7 +706,7 @@ api.add_resource(ApiRoot, "/")
 api.add_resource(EventCollection, "/event")
 api.add_resource(EventItem, "/event/<event_id>")
 api.add_resource(AttendeeCollection, "/event/<event_identifier>/attendees")
-api.add_resource(AttendeeItem, "/event/<event_id>/attendees/<attendee_id>")
+api.add_resource(AttendeeItem, "/event/<event_identifier>/attendees/<attendee_id>")
 api.add_resource(EventTime, "/event/<event_id>/time")
 api.add_resource(EventLocation, "/event/<event_id>/location")
 api.add_resource(EventDescription, "/event/<event_id>/description")
