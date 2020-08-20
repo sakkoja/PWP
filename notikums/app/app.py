@@ -268,9 +268,6 @@ class EventItem(Resource):
 
 class AttendeeCollection(Resource):
 
-# @app.route("/event/<event_id>/attendee", methods=["GET", "POST"])
-# def event_attendee_list(event_id):
-#     """Event's attendee list, only visible to event's creator"""
 #     # GET Requests
 #     #
 #     # Headers
@@ -335,10 +332,12 @@ class AttendeeCollection(Resource):
 #     return "Not Found", 404
 
 
-    def get(self, event_id):
+    def get(self, event_identifier):
         """get list of all attendees to specific event as JSON array"""
-        
-        if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
+        event_item = Event.query.filter_by(identifier=event_identifier).first()
+        if not event_item:
+            return "Event not found", 404
+        if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_identifier).first().creator_token):
             return 401
         try:
             response_data = []
@@ -350,7 +349,7 @@ class AttendeeCollection(Resource):
                     "email":"",
                     "phone":""
                 })
-            attended_event = Event.query.filter_by(identifier=event_id).first()
+            attended_event = Event.query.filter_by(identifier=event_identifier).first()
             for attendee in attended_event.attendees:
                 response_json = json.loads(response_template)
                 response_json["user_name"] = attendee.user_name
@@ -365,42 +364,38 @@ class AttendeeCollection(Resource):
             return "General error o7", 400
 
 
-    def post(self, event_id):
+    def post(self, event_identifier):
         """create new attendee to specific event"""
+        event_item = Event.query.filter_by(identifier=event_id).first()
+        if not event_item:
+            return "Event not found", 404
         if not request.json:
             return "Request content type must be JSON", 415
         try:
-            event_title = request.json["title"]
-            event_time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
-            event_location = request.json["location"]
-            event_creator_name = request.json["creator_name"]
-            event_description = request.json["description"]
-            event_image = request.json["image"]
-            event_creator_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
-            event_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
-            new_attendee = Event(
-                title=event_title,
-                identifier=event_identifier,
-                time=event_time,
-                location=event_location,
-                creator_name=event_creator_name,
-                creator_token=event_creator_token,
-                description=event_description,
-                image=event_image
+            attendee_user_name = request.json["user_name"]
+            attendee_first_name = request.json["first_name"]
+            attendee_last_name = request.json["last_name"]
+            attendee_email = request.json["email"]
+            attendee_phone = request.json["phone"]
+            attendee_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
+            new_attendee = User(
+                event_id=event_identifier,
+                user_token=attendee_token,
+                user_name=attendee_user_name,
+                first_name=attendee_first_name,
+                last_name=attendee_last_name,
+                email=attendee_email,
+                phone=attendee_phone
             )
             db.session.add(new_attendee)
             db.session.commit()
-            event_data = Event.query.filter_by(identifier=event_identifier).first()
+            user_data = User.query.filter_by(event_id=event_identifier).first()
             response_template = json.dumps(
                 {
-                    "creator_token": "",
-                    "title":"",
-                    "identifier":""
+                    "user_token": ""
                 })
             response_json = json.loads(response_template)
-            response_json["creator_token"] = event_data.creator_token
-            response_json["title"] = event_data.title
-            response_json["identifier"] = event_data.identifier
+            response_json["user_token"] = user_data.user_token
             return response_json, 201
         except (KeyError, ValueError, OperationalError):
             return "Incomplete request - missing fields", 400
@@ -607,7 +602,7 @@ db.create_all()
 api.add_resource(ApiRoot, "/")
 api.add_resource(EventCollection, "/event")
 api.add_resource(EventItem, "/event/<event_id>")
-api.add_resource(AttendeeCollection, "/event/<event_id>/attendees")
+api.add_resource(AttendeeCollection, "/event/<event_identifier>/attendees")
 api.add_resource(AttendeeItem, "/event/<event_id>/attendees/<attendee_id>")
 api.add_resource(EventTime, "/event/<event_id>/time")
 api.add_resource(EventLocation, "/event/<event_id>/location")
@@ -625,6 +620,10 @@ api.add_resource(EventImage, "/event/<event_id>/image")
 
 # Get event attendee list
 # curl -i -X GET -H 'Authorization: Basic <creator_token>' http://localhost:5000/event/<event_id>/attendees
+
+# Create event attendee with POST
+# curl -i -X POST -H 'Content-Type: application/json' -H 'Authorization: Basic <creator_token>' --data @<json_filename>.json http://localhost:5000/event/<event_id>
+
 
 
 # Example json:
