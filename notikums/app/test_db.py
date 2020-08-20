@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import app
 
-from app import User, Event, Image
+from app import User, Event
 from datetime import datetime
 from sqlalchemy.engine import Engine
 from sqlalchemy import event
@@ -46,17 +46,17 @@ def test_create_users_positive(db_handle):
 
 
 def test_create_event_positive(db_handle):
-    event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here")
+    event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", identifier="12345678")
     db_handle.session.add(event)
     db_handle.session.commit()
     assert Event.query.count() == 1
 
 
-def test_create_image_positive(db_handle):
-    image = Image(url="http://localhost:5000/dev/null")
-    db_handle.session.add(image)
-    db_handle.session.commit()
-    assert Image.query.count() == 1
+# def test_create_image_positive(db_handle):
+#     image = Image(url="http://localhost:5000/dev/null")
+#     db_handle.session.add(image)
+#     db_handle.session.commit()
+#     assert Image.query.count() == 1
 
 
 def test_create_users_negative(db_handle):
@@ -90,14 +90,14 @@ def test_create_event_negative(db_handle):
         db_handle.session.rollback()
 
 
-def test_create_image_negative(db_handle):
-    with pytest.raises(IntegrityError):
-        db_handle.session.add(Image())
-        db_handle.session.commit()
+# def test_create_image_negative(db_handle):
+#     with pytest.raises(IntegrityError):
+#         db_handle.session.add(Image())
+#         db_handle.session.commit()
 
 
 def test_create_event_attendee(db_handle):
-    event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here")
+    event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", identifier="12345678")
     attendee = User(user_token="token", user_name="user_name")
     # add the event for the attendee, should back populate to the events
     attendee.event = event
