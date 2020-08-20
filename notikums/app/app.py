@@ -413,8 +413,8 @@ class AttendeeCollection(Resource):
             )
             db.session.add(new_attendee)
             db.session.commit()
-            import pdb
-            pdb.set_trace()
+            # import pdb
+            # pdb.set_trace()
             user_data = User.query.filter_by(user_identifier=attendee_user_identifier).first()
             response_template = json.dumps(
                 {
@@ -487,13 +487,48 @@ class AttendeeItem(Resource):
 #     # nothing
 #     return "Not Found", 404
 
-    def get(self):
+    def get(self, event_identifier, attendee_id):
+        """get information of one attendee as JSON array"""
+
+        event_item = Event.query.filter_by(identifier=event_identifier).first()
+        if not event_item:
+            return "Event not found", 404
+
+        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+            return "Authentication failed", 401
+
+        attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
+        if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token)
+            return "authentication failed", 401
+
+        try:
+            response_data = []
+            response_template = json.dumps(
+                {
+                    "user_identifier":"",
+                    "user_name":"",
+                    "first_name":"",
+                    "last_name":"",
+                    "email":"",
+                    "phone":""
+                })
+            for attendee in event_item.attendees:
+                response_json = json.loads(response_template)
+                response_json["user_identifier"] = attendee.user_identifier
+                response_json["user_name"] = attendee.user_name
+                response_json["first_name"] = attendee.first_name
+                response_json["last_name"] = attendee.last_name
+                response_json["email"] = attendee.email
+                response_json["phone"] = attendee.phone
+                response_data.append(response_json)
+            return response_data, 200
+        except (KeyError, ValueError, IntegrityError, OperationalError):
+            return "General error o7", 400
+
+    def put(self, event_identifier, attendee_id):
         pass
 
-    def put(self):
-        pass
-
-    def delete(self):
+    def delete(self, event_identifier, attendee_id):
         pass
 
 
@@ -671,7 +706,7 @@ api.add_resource(ApiRoot, "/")
 api.add_resource(EventCollection, "/event")
 api.add_resource(EventItem, "/event/<event_id>")
 api.add_resource(AttendeeCollection, "/event/<event_identifier>/attendees")
-api.add_resource(AttendeeItem, "/event/<event_id>/attendees/<attendee_id>")
+api.add_resource(AttendeeItem, "/event/<event_identifier>/attendees/<attendee_id>")
 api.add_resource(EventTime, "/event/<event_id>/time")
 api.add_resource(EventLocation, "/event/<event_id>/location")
 api.add_resource(EventDescription, "/event/<event_id>/description")
