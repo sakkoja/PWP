@@ -27,6 +27,7 @@ fh.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
+logging.getLogger('sqlalchemy').addHandler(fh)
 
 
 ### utility
@@ -79,6 +80,21 @@ def post_schema():
             "maxLength": 256
         }
         return schema
+
+
+def image_post_schema():
+    schema = schema = {
+            "type": "object",
+            "required": ["image"]
+        }
+    props = schema["properties"] = {}
+    props["image"] = {
+        "description": "Url of the event image",
+        "type": "string",
+        # "minLength": 0,
+        "maxLength": 256
+    }
+    return schema
 
 
 class User(db.Model):
@@ -575,7 +591,7 @@ class EventImage(Resource):
             return "General error o7", 400
 
 
-    def post(self):
+    def post(self, event_id):
         # # POST Requests
         # Headers
         # Authorization: Basic asd123creatortokenforevent1
@@ -590,7 +606,29 @@ class EventImage(Resource):
         # return "Created", 201
         # return "Unauthorized", 401
         # return "Not Found", 404
-        pass
+        """add or modify image of event"""
+        if not request.json or not validate_json(request.json, image_post_schema()):
+            return "Request content type must be JSON", 415
+        event = Event.query.filter_by(identifier=event_id).first()
+        if not authenticate_user(request.headers.get("Authorization"), event.creator_token):
+            return "invalid token", 401
+        try:
+            event.image = request.json["image"]
+            db.session.add(event)
+            db.session.commit()
+            event_data = Event.query.filter_by(identifier=event_id).first()
+            response_template = json.dumps(
+                {
+                    "event_id": "",
+                    "image":""
+                })
+            response_json = json.loads(response_template)
+            response_json["event_id"] = event_data.identifier
+            response_json["image"] = event_data.image
+            logger.debug("post image response: ", response_json)
+            return response_json, 201
+        except (KeyError, ValueError, OperationalError):
+            return "Bad Request - https://http.cat/400", 400
 
     def delete(self):
         # # DELETE Requests
