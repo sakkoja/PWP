@@ -1,4 +1,4 @@
-import json, datetime, random, string, jsonschema
+import json, datetime, random, string, jsonschema, logging
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -10,6 +10,15 @@ api = Api(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+
+# logging for the application
+logger = logging.getLogger("notikums")
+logger.setLevel("DEBUG")
+fh = logging.FileHandler(f"notikums_app.log")
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 
 ### utility
