@@ -27,6 +27,7 @@ fh.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 logging.getLogger('sqlalchemy').addHandler(fh)
 
 
@@ -610,6 +611,8 @@ class EventImage(Resource):
         if not request.json or not validate_json(request.json, image_post_schema()):
             return "Request content type must be JSON", 415
         event = Event.query.filter_by(identifier=event_id).first()
+        if not event:
+            return "Not Found", 404
         if not authenticate_user(request.headers.get("Authorization"), event.creator_token):
             return "invalid token", 401
         try:
@@ -625,12 +628,12 @@ class EventImage(Resource):
             response_json = json.loads(response_template)
             response_json["event_id"] = event_data.identifier
             response_json["image"] = event_data.image
-            logger.debug("post image response: ", response_json)
+            logger.info("post image response: " + json.dumps(response_json))
             return response_json, 201
         except (KeyError, ValueError, OperationalError):
             return "Bad Request - https://http.cat/400", 400
 
-    def delete(self):
+    def delete(self, event_id):
         # # DELETE Requests
         # Headers
         # Authorization: Basic asd123creatortokenforevent1
@@ -639,7 +642,20 @@ class EventImage(Resource):
         # return "OK", 204
         # return "Unauthorized", 401
         # return "Not Found", 404
-        pass
+        """delete event image"""
+        try:
+            event = Event.query.filter_by(identifier=event_id).first()
+            if not event:
+                return "Not Found", 404
+            if not authenticate_user(request.headers.get("Authorization"), event.creator_token):
+                return "invalid token", 401
+            event = Event.query.filter_by(identifier=event_id).first()
+            event.image = None
+            db.session.add(event)
+            db.session.commit()
+            return "OK", 204
+        except AttributeError:
+            return "Event not found", 404
 
 db.create_all()
 api.add_resource(ApiRoot, "/")
@@ -664,6 +680,11 @@ api.add_resource(EventImage, "/event/<event_id>/image")
 # Get event attendee list
 # curl -i -X GET -H 'Authorization: Basic <creator_token>' http://localhost:5000/event/<event_id>/attendees
 
+# Update event image
+# curl -i -X POST -H "Content-Type: application/json" -H 'Authorization: Basic <creator_token>' --data '{"image": "/dev/null"}' localhost:5000/event/<event_id>/image
+
+# Delete event image
+# curl -i -X DELETE -H 'Authorization: Basic <creator_token>' localhost:5000/event/<event_id>/image
 
 # Example json:
 # {
