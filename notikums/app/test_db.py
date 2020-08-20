@@ -35,8 +35,7 @@ def db_handle():
     os.close(db_fd)
     os.unlink(db_fname)
 
-# tests
-
+# tests    
 
 def test_create_users_positive(db_handle):
     user = User(user_token="token", user_name="user_name")
@@ -51,12 +50,17 @@ def test_create_event_positive(db_handle):
     db_handle.session.commit()
     assert Event.query.count() == 1
 
+def test_create_full_users_positive(db_handle):
+    user = User(user_token="token", user_name="user_name", first_name="Test", last_name="User", email="testmail@test.com", phone="0441234567")
+    db_handle.session.add(user)
+    db_handle.session.commit()
+    assert User.query.count() == 1
 
-# def test_create_image_positive(db_handle):
-#     image = Image(url="http://localhost:5000/dev/null")
-#     db_handle.session.add(image)
-#     db_handle.session.commit()
-#     assert Image.query.count() == 1
+def test_create_full_event_positive(db_handle):
+    event = Event(creator_token="token", creator_name="Creator MacLovin", description="This is a test event :)", title="test event", time=datetime.utcnow(), location="here", identifier="12345678", image="https://ouluhealth.fi/wp-content/uploads/2019/02/HIMMS_OuluSideEvent2019.jpg")
+    db_handle.session.add(event)
+    db_handle.session.commit()
+    assert Event.query.count() == 1
 
 
 def test_create_users_negative(db_handle):
@@ -64,8 +68,8 @@ def test_create_users_negative(db_handle):
     users = [
         User(),
         User(user_token="token", user_name=None),
-        User(user_token=None, user_name="user_name"),
-        # User(user_token="a" * 120, user_name="user_name"),  # do we want to enforce the lenght of columns? https://stackoverflow.com/questions/2317081/sqlalchemy-maximum-column-length
+        User(user_token=None, user_name="user_name")
+        #User(user_token="a" * 120, user_name="user_name"),  # do we want to enforce the lenght of columns? https://stackoverflow.com/questions/2317081/sqlalchemy-maximum-column-length
     ]
     for user in users:
         with pytest.raises(IntegrityError):
@@ -81,6 +85,9 @@ def test_create_event_negative(db_handle):
         Event(creator_token="token", title="test event", time=None, location="here"),
         Event(creator_token="token", title=None, time=datetime.utcnow(), location="here"),
         Event(creator_token=None, title="test event", time=datetime.utcnow(), location="here"),
+        Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", creator_name="RI18SnEMQJyoclWJ9siJ9PVY4Xx7ikneZsXy0O8DUPTuwKWqv6Xg4l1bsRfA6SAgV1PogTvtxFuCpsb6"),
+        Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", image=True),
+        Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", description=404)
         # Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", ),
     ]
     for event in events:
