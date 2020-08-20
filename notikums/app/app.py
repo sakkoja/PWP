@@ -26,6 +26,7 @@ def validate_json(jsonData, jsonSchema):
     try:
         validate(instance=jsonData, schema=jsonSchema)
     except jsonschema.exceptions.ValidationError as err:
+        logger.exception("validate_json(): schema validation resulted in error")
         return False
     return True
 
