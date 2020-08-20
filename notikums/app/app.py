@@ -344,26 +344,23 @@ class AttendeeCollection(Resource):
             response_data = []
             response_template = json.dumps(
                 {
-                    "title":"",
-                    "identifier":"",
-                    "time":"",
-                    "location":"",
-                    "creator_name":"",
-                    "description":"",
-                    "image":""
+                    "user_name":"",
+                    "first_name":"",
+                    "last_name":"",
+                    "email":"",
+                    "phone":""
                 })
-            event_list = Event.query.all()
-            for item in event_list:
-                response_json = json.loads(response_template)
-                response_json["title"] = item.title
-                response_json["identifier"] = item.identifier
-                response_json["time"] = (item.time).strftime("%Y-%m-%dT%H:%M:%S%z")
-                response_json["location"] = item.location
-                response_json["creator_name"] = item.creator_name
-                response_json["description"] = item.description
-                response_json["image"] = item.image
-                response_data.append(response_json)
-            return response_data, 200
+            user_list = Event.query.filter_by(identifier=event_id).first()
+            # for item in user_list:
+            #     response_json = json.loads(response_template)
+            #     response_json["user_name"] = item.user_name
+            #     response_json["first_name"] = item.first_name
+            #     response_json["last_name"] = item.last_name
+            #     response_json["email"] = item.email
+            #     response_json["phone"] = item.phone
+            #     response_data.append(response_json)
+            # return response_data, 200
+            return user_list.attendees, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "General error o7", 400
 
@@ -381,7 +378,7 @@ class AttendeeCollection(Resource):
             event_image = request.json["image"]
             event_creator_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
             event_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
-            new_event = Event(
+            new_attendee = Event(
                 title=event_title,
                 identifier=event_identifier,
                 time=event_time,
@@ -391,7 +388,7 @@ class AttendeeCollection(Resource):
                 description=event_description,
                 image=event_image
             )
-            db.session.add(new_event)
+            db.session.add(new_attendee)
             db.session.commit()
             event_data = Event.query.filter_by(identifier=event_identifier).first()
             response_template = json.dumps(
@@ -616,3 +613,26 @@ api.add_resource(EventTime, "/event/<event_id>/time")
 api.add_resource(EventLocation, "/event/<event_id>/location")
 api.add_resource(EventDescription, "/event/<event_id>/description")
 api.add_resource(EventImage, "/event/<event_id>/image")
+
+
+# create event with POST
+# curl -i -X POST -H 'Content-Type: application/json' --data @<json_filename>.json http://localhost:5000/event
+
+
+
+# Modify event with PUT
+# curl -i -X PUT -H 'Content-Type: application/json' -H 'Authorization: Basic <creator_token>' --data @<json_filename>.json http://localhost:5000/event/<event_id>
+
+# Get event attendee list
+# curl -i -X GET -H 'Authorization: Basic <creator_token>' http://localhost:5000/event/<event_id>/attendees
+
+
+# Example json:
+# {
+#     "title":"eventti",
+#     "time":"2020-02-02T00:00:00+0200",
+#     "location":"Tellus",
+#     "creator_name":"sakkoja",
+#     "description":"this is an event",
+#     "image":"http://google.com"
+# }
