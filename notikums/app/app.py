@@ -1,4 +1,4 @@
-import json, datetime, random, string, jsonschema
+import json, datetime, random, string, jsonschema, logging
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -11,17 +11,30 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
+
 ### user authentication
 def authenticate_user(client_token, stored_token):
     if client_token != ("Basic " + stored_token):
         return False
     return True
 
+
+# logging for the application
+logger = logging.getLogger("notikums")
+logger.setLevel("DEBUG")
+fh = logging.FileHandler(f"notikums_app.log")
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
+
 ### utility
 def validate_json(jsonData, jsonSchema):
     try:
         validate(instance=jsonData, schema=jsonSchema)
     except jsonschema.exceptions.ValidationError as err:
+        logger.exception("validate_json(): schema validation resulted in error")
         return False
     return True
 
