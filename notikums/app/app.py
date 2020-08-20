@@ -11,6 +11,11 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
+### user authentication
+def authenticate_user(client_token, stored_token):
+    if client_token != ("Basic " + stored_token):
+        return False
+    return True
 
 ### utility
 def validate_json(jsonData, jsonSchema):
@@ -213,8 +218,7 @@ class EventItem(Resource):
         """modify event, requires creator token as header"""
         if not request.json:
             return "Request content type must be JSON", 415
-        event_token = Event.query.filter_by(identifier=event_id).first()
-        if request.headers.get("Authorization") != ("Basic " + event_token.creator_token):
+        if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
             return 401
         try:
             event_title = request.json["title"]
@@ -240,8 +244,7 @@ class EventItem(Resource):
     def delete(self, event_id):
         """delete event, requires creator token as header"""
         try:
-            event_token = Event.query.filter_by(identifier=event_id).first()
-            if request.headers.get("Authorization") != ("Basic " + event_token.creator_token):
+            if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
                 return 401
             Event.query.filter_by(identifier=event_id).delete()
             db.session.commit()
@@ -319,8 +322,11 @@ class AttendeeCollection(Resource):
 #     return "Not Found", 404
 
 
-    def get(self):
-        """get list of all incoming events as JSON array"""
+    def get(self, event_id):
+        """get list of all attendees to specific event as JSON array"""
+        
+        if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
+            return 401
         try:
             response_data = []
             response_template = json.dumps(
@@ -349,7 +355,7 @@ class AttendeeCollection(Resource):
             return "General error o7", 400
 
 
-    def post(self):
+    def post(self, event_id):
         """create new event"""
         if not request.json:
             return "Request content type must be JSON", 415
