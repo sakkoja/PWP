@@ -675,18 +675,15 @@ api.add_resource(EventImage, "/event/<event_id>/image")
 # Get event attendee list
 # curl -i -X GET -H 'Authorization: Basic <creator_token>' http://localhost:5000/event/<event_id>/attendees
 
-<<<<<<< HEAD
 # Create event attendee with POST
 # curl -i -X POST -H 'Content-Type: application/json' -H 'Authorization: Basic <creator_token>' --data @<json_filename>.json http://localhost:5000/event/<event_id>
 
 
-=======
 # Update event image
 # curl -i -X POST -H "Content-Type: application/json" -H 'Authorization: Basic <creator_token>' --data '{"image": "/dev/null"}' localhost:5000/event/<event_id>/image
 
 # Delete event image
 # curl -i -X DELETE -H 'Authorization: Basic <creator_token>' localhost:5000/event/<event_id>/image
->>>>>>> 5b609f61f3ab5a6372a61a2d0853142e5079ee76
 
 # Example json:
 # {
