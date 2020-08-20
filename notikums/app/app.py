@@ -29,31 +29,33 @@ def post_schema():
         }
         props = schema["properties"] = {}
         props["title"] = {
-            "description": "Item's unique name",
+            "description": "Title of event",
             "type": "string",
             "maxLength": 128
         }
         props["time"] = {
-            "description": "Weight of the item",
-            "type": "date-time"
+            "description": "Time and date of event",
+            "type": "string",
+            "minLength": 24,
+            "maxLength": 24
         }
         props["location"] = {
-            "description": "Price of the item",
+            "description": "Location of event",
             "type": "string",
             "maxLength": 64
         }
         props["creator_name"] = {
-            "description": "Item's unique name",
+            "description": "Name of the event creator",
             "type": "string",
             "maxLength": 64
         }
         props["description"] = {
-            "description": "Weight of the item",
+            "description": "Description of event",
             "type": "string",
             "maxLength": 256
         }
         props["image"] = {
-            "description": "Price of the item",
+            "description": "Image of event",
             "type": "string",
             # "minLength": 0,
             "maxLength": 256
