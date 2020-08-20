@@ -350,23 +350,23 @@ class AttendeeCollection(Resource):
                     "email":"",
                     "phone":""
                 })
-            user_list = Event.query.filter_by(identifier=event_id).first()
-            # for item in user_list:
-            #     response_json = json.loads(response_template)
-            #     response_json["user_name"] = item.user_name
-            #     response_json["first_name"] = item.first_name
-            #     response_json["last_name"] = item.last_name
-            #     response_json["email"] = item.email
-            #     response_json["phone"] = item.phone
-            #     response_data.append(response_json)
-            # return response_data, 200
-            return user_list.attendees, 200
+            attended_event = Event.query.filter_by(identifier=event_id).first()
+            for attendee in attended_event.attendees:
+                response_json = json.loads(response_template)
+                response_json["user_name"] = attendee.user_name
+                response_json["first_name"] = attendee.first_name
+                response_json["last_name"] = attendee.last_name
+                response_json["email"] = attendee.email
+                response_json["phone"] = attendee.phone
+                response_data.append(response_json)
+            return response_data, 200
+#            return attended_event.attendees, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "General error o7", 400
 
 
     def post(self, event_id):
-        """create new event"""
+        """create new attendee to specific event"""
         if not request.json:
             return "Request content type must be JSON", 415
         try:
