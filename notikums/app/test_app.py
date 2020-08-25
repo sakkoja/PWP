@@ -255,7 +255,88 @@ def test_delete_event_negative(client):
     assert result.status_code == 404
 
 
-def test_register_attendee(client):
+def test_register_attendee_positive(client):
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name":"tester"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    for assumed in ["user_token", "user_identifier"]:
+        assert assumed in result.json
+
+
+def test_register_attendee_negative(client):
+    result = client.post(
+        event_attendees_url("not-your-event"),
+        json={
+            "user_name":"tester"
+        }
+    )
+    print(result)
+    # what we assume we got in the response
+    assert result.status_code == 404
+
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "last_name":"tester"
+        }
+    )
+    print(result)
+    # what we assume we got in the response
+    assert result.status_code == 415
+
+
+def test_update_attendee_positive(client):
+    result = client.put(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0].get("user_identifier")),
+        json={
+            "last_name":"tester"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[0].get("user_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 200
+    assert result.json
+
+
+def test_update_attendee_negative(client):
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name":"tester"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    for assumed in ["user_token", "user_identifier"]:
+        assert assumed in result.json
+
+
+def test_delete_attendee_positive(client):
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name":"tester"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    for assumed in ["user_token", "user_identifier"]:
+        assert assumed in result.json
+
+
+def test_delete_attendee_negative(client):
     result = client.post(
         event_attendees_url(test_events[0].get("identifier")),
         json={

@@ -99,10 +99,15 @@ def image_post_schema():
     }
     return schema
 
-def user_schema():
+def post_user_schema():
+        schema = put_user_schema()
+        schema["required"] = ["user_name"]
+        return schema
+
+def put_user_schema():
         schema = {
             "type": "object",
-            "required": ["user_name"],
+            # "required": ["user_name"],
             # "optional": ["first_name", "last_name", "email", "phone"]
         }
         props = schema["properties"] = {}
@@ -505,7 +510,7 @@ class AttendeeCollection(Resource):
             return "Event not found", 404
 
         # check if request is json and follows correct schema
-        if not request.json or not validate_json(request.json, user_schema()):
+        if not request.json or not validate_json(request.json, post_user_schema()):
             return "Request content type must be JSON", 415
 
         try:
@@ -666,7 +671,7 @@ class AttendeeItem(Resource):
         """modify attendee participation information"""
 
         # check if request is json and follows correct schema
-        if not request.json or not validate_json(request.json, user_schema()):
+        if not request.json or not validate_json(request.json, put_user_schema()):
             return "Request content type must be JSON", 415
 
 
