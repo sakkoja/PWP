@@ -5,19 +5,20 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from flask_restful import Resource, Api
 from jsonschema import validate
 
+# init flask app
 app = Flask(__name__)
 api = Api(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
-
-### user authentication
+# basic user authentication, compare token in request to token in db
+# TODO: improve token handling
 def authenticate_user(client_token, stored_token):
+    """compare token stored in db with token given in request"""
     if client_token != ("Basic " + stored_token):
         return False
     return True
-
 
 # logging for the application
 logger = logging.getLogger("notikums")
@@ -30,8 +31,7 @@ logger.addHandler(fh)
 logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 logging.getLogger('sqlalchemy').addHandler(fh)
 
-
-### utility
+# schema validation for requests
 def validate_json(jsonData, jsonSchema):
     try:
         validate(instance=jsonData, schema=jsonSchema)
@@ -40,8 +40,8 @@ def validate_json(jsonData, jsonSchema):
         return False
     return True
 
-### schemas
-def post_schema():
+# schemas for event, user and image
+def event_schema():
         schema = {
             "type": "object",
             "required": ["title", "time", "location"],
@@ -75,13 +75,11 @@ def post_schema():
             "maxLength": 256
         }
         props["image"] = {
-            "description": "Image of event",
+            "description": "URL of the event image",
             "type": "string",
-            # "minLength": 0,
             "maxLength": 256
         }
         return schema
-
 
 def image_post_schema():
     schema = schema = {
@@ -90,14 +88,47 @@ def image_post_schema():
         }
     props = schema["properties"] = {}
     props["image"] = {
-        "description": "Url of the event image",
+        "description": "URL of the event image",
         "type": "string",
-        # "minLength": 0,
         "maxLength": 256
     }
     return schema
 
+def user_schema():
+        schema = {
+            "type": "object",
+            "required": ["user_name"],
+            # "optional": ["first_name", "last_name", "email", "phone"]
+        }
+        props = schema["properties"] = {}
+        props["user_name"] = {
+            "description": "Nickname of attendee",
+            "type": "string",
+            "maxLength": 64
+        }
+        props["first_name"] = {
+            "description": "First name of attendee",
+            "type": "string",
+            "maxLength": 64
+        }
+        props["last_name"] = {
+            "description": "Last name of attendee",
+            "type": "string",
+            "maxLength": 64
+        }
+        props["email"] = {
+            "description": "Email address of attendee",
+            "type": "string",
+            "maxLength": 64
+        }
+        props["phone"] = {
+            "description": "Phone number of attendee",
+            "type": "string",
+            "maxLength": 16
+        }
+        return schema
 
+# create db model for users
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey("event.id"))
@@ -113,10 +144,8 @@ class User(db.Model):
 
     def as_dict(self):
        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-    # def __repr__(self):
-    #     return "{}".format(self.id, self.user_token)
 
-
+# create db model for events
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     identifier = db.Column(db.String(8), unique=True, nullable=False)  # this is exposed in API to identify events
@@ -133,18 +162,17 @@ class Event(db.Model):
     # credit to https://stackoverflow.com/questions/5022066/how-to-serialize-sqlalchemy-result-to-json
     def as_dict(self):
        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-    # def __repr__(self):
-    #     return "{},{},{},{}".format(self.id, self.title, self.time, self.location, self.creator_name, self.description)
 
+# init db
 def initialize_empty_database():
     db.create_all()
 
-
+# define resources
 class ApiRoot(Resource):
 
     def get(self):
         """Notikums landing page and descriptions"""
-        return "Well hello there. TODO: add apiary link here", 200
+        return "Well hello there. API documentation is available in Apiary https://notikums.docs.apiary.io/#", 200
 
 
 class EventCollection(Resource):
@@ -176,14 +204,14 @@ class EventCollection(Resource):
                 response_data.append(response_json)
             return response_data, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
     def post(self):
         """create new event"""
 
         # check if request is json and follows correct schema
-        if not request.json or not validate_json(request.json, post_schema()):
+        if not request.json or not validate_json(request.json, event_schema()):
             return "Request content type must be JSON", 415
 
         try:
@@ -235,15 +263,26 @@ class EventCollection(Resource):
                 {
                     "creator_token": "",
                     "title":"",
-                    "identifier":""
+                    "identifier":"",
+                    "time":"",
+                    "location":"",
+                    "creator_name":"",
+                    "description":"",
+                    "image":""
                 })
             response_json = json.loads(response_template)
             response_json["creator_token"] = event_data.creator_token
             response_json["title"] = event_data.title
             response_json["identifier"] = event_data.identifier
+            response_json["time"] = (event_data.time).strftime("%Y-%m-%dT%H:%M:%S%z")
+            response_json["location"] = event_data.location
+            response_json["creator_name"] = event_data.creator_name
+            response_json["description"] = event_data.description
+            response_json["image"] = event_data.image
             return response_json, 201
         except (KeyError, ValueError, OperationalError):
-            return "Incomplete request - missing fields", 400
+            return "General error o7, please contact administrators", 400
+
 
 class EventItem(Resource):
 
@@ -278,14 +317,14 @@ class EventItem(Resource):
         except AttributeError:
             return "Event not found", 404
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
     def put(self, event_id):
         """modify event, requires creator token as header"""
 
         # check if request is json and follows correct schema
-        if not request.json:
+        if not request.json or not validate_json(request.json, event_schema()):
             return "Request content type must be JSON", 415
 
         # check if event exists and continue
@@ -438,8 +477,11 @@ class AttendeeCollection(Resource):
         event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
-        if not request.json:
+
+        # check if request is json and follows correct schema
+        if not request.json or not validate_json(request.json, user_schema()):
             return "Request content type must be JSON", 415
+
         try:
 
             # create dict with empty values for all keys
@@ -598,8 +640,9 @@ class AttendeeItem(Resource):
         """modify attendee participation information"""
 
         # check if request is json and follows correct schema
-        if not request.json:
+        if not request.json or not validate_json(request.json, user_schema()):
             return "Request content type must be JSON", 415
+
 
         # check if event exists and continue
         event_item = Event.query.filter_by(identifier=event_identifier).first()
