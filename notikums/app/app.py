@@ -286,13 +286,15 @@ class EventItem(Resource):
         # check if request is json and follows correct schema
         if not request.json:
             return "Request content type must be JSON", 415
-        if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
-            return "Authorization failed", 401
 
         # check if event exists and continue
         event_info = Event.query.filter_by(identifier=event_id).first()
         if not event_info:
             return "Event not found", 404
+        
+        # check authentication
+        if not authenticate_user(request.headers.get("Authorization"), event_info.creator_token):
+            return "Authorization failed", 401
 
         try:
 
@@ -310,9 +312,10 @@ class EventItem(Resource):
             if "image" in request.json:
                 event_info.image = request.json["image"]
 
-            # commit changes to db
+            # commit changes to db and return 201
             db.session.commit()
             return 201
+
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "Incomplete request - missing fields", 400
 
@@ -562,11 +565,9 @@ class AttendeeItem(Resource):
             return "Event not found", 404
 
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            return "Authentication failed", 401
-
-        attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
-        if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
-            return "authentication failed", 401
+            attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
+                return "Authentication failed", 401
 
         try:
             response_data = []
@@ -592,11 +593,71 @@ class AttendeeItem(Resource):
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "General error o7", 400
 
+
     def put(self, event_identifier, attendee_id):
-        pass
+        """modify attendee participation information"""
+
+        # check if request is json and follows correct schema
+        if not request.json:
+            return "Request content type must be JSON", 415
+
+        # check if event exists and continue
+        event_item = Event.query.filter_by(identifier=event_identifier).first()
+        if not event_item:
+            return "Event not found", 404
+
+        # check authentication, continue if request contains correct creator_token or user_token
+        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+            attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
+                return "Authentication failed", 401
+
+        try:
+
+            # check if request contains information and save that info to dict
+            if "user_name" in request.json:
+                attendee_item.user_name = request.json["user_name"]
+            if "first_name" in request.json:
+                attendee_item.first_name = request.json["first_name"]
+            if "last_name" in request.json:
+                attendee_item.last_name = request.json["last_name"]
+            if "email" in request.json:
+                attendee_item.email = request.json["email"]
+            if "phone" in request.json:
+                attendee_item.phone = request.json["phone"]
+
+            # commit changes to db and return 201
+            db.session.commit()
+            return 201
+
+        except (KeyError, ValueError, OperationalError):
+            return "Incomplete request - missing fields", 400
+
 
     def delete(self, event_identifier, attendee_id):
-        pass
+        """delete participation, requires """
+
+        # check if request is json and follows correct schema
+        if not request.json:
+            return "Request content type must be JSON", 415
+
+        # check if event exists and continue
+        event_item = Event.query.filter_by(identifier=event_identifier).first()
+        if not event_item:
+            return "Event not found", 404
+
+        # check authentication, continue if request contains correct creator_token or user_token
+        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+            attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
+                return "Authentication failed", 401
+
+        try:
+            User.query.filter_by(user_identifier=attendee_id).delete()
+            db.session.commit()
+            return 204
+        except (KeyError, ValueError, OperationalError):
+            return "Incomplete request - missing fields", 400
 
 
 class EventTime(Resource):
@@ -743,6 +804,7 @@ class EventImage(Resource):
             return response_json, 201
         except (KeyError, ValueError, OperationalError):
             return "Bad Request - https://http.cat/400", 400
+
 
     def delete(self, event_id):
         # # DELETE Requests
