@@ -36,6 +36,29 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 #     os.unlink(db_fname)
 test_events = []
 test_users = []
+EVENT_RESOURCE_URL = "/event/"
+
+def event_url(event_id):
+    return "/event/{}".format(event_id)
+
+def event_attendees_url(event_id):
+    return event_url(event_id) + "/attedees"
+
+def event_specific_attendee_url(event_id, attendee_id):
+    return event_url(event_id) + "/attendees/{}".format(attendee_id)
+
+def event_image(event_id):
+    return event_url(event_id) + "/image"
+
+def event_description(event_id):
+    return event_url(event_id) + "/description"
+
+def event_location(event_id):
+    return event_url(event_id) + "/location"
+
+def event_time(event_id):
+    return event_url(event_id) + "/time"
+
 def _populate_db():
     for i in range(1, 4):
         event = Event(
