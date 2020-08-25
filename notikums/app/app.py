@@ -387,19 +387,27 @@ class EventItem(Resource):
             response_json["image"] = event_data.image
             return response_json, 201
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "Incomplete request - missing fields", 400
+            return "General error o7, please contact administrators", 400
 
 
     def delete(self, event_id):
         """delete event, requires creator token as header"""
+
+        # check if event exists and continue
+        event_data = Event.query.filter_by(identifier=event_id).first()
+        if not event_data:
+            return "Event not found", 404
+
+        # check authentication
+        if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
+            return "Authorization failed", 401
+
         try:
-            if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
-                return "Authorization failed", 401
             Event.query.filter_by(identifier=event_id).delete()
             db.session.commit()
             return "OK", 204
-        except AttributeError:
-            return "Event not found", 404
+        except (KeyError, ValueError, IntegrityError, OperationalError):
+            return "General error o7, please contact administrators", 400
 
 
 class AttendeeCollection(Resource):
@@ -471,10 +479,12 @@ class AttendeeCollection(Resource):
     def get(self, event_identifier):
         """get list of all attendees to specific event as JSON array"""
 
+        # check if event exists and continue
         event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
 
+        # check authentication
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
             return "Authentication failed", 401
 
@@ -500,11 +510,13 @@ class AttendeeCollection(Resource):
                 response_data.append(response_json)
             return response_data, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
     def post(self, event_identifier):
         """create new attendee to specific event"""
+
+        # check if event exists and continue
         event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
@@ -560,16 +572,23 @@ class AttendeeCollection(Resource):
             response_template = json.dumps(
                 {
                     "user_identifier":"",
-                    "user_token": ""
+                    "user_name":"",
+                    "first_name":"",
+                    "last_name":"",
+                    "email":"",
+                    "phone":""
                 })
             response_json = json.loads(response_template)
             response_json["user_identifier"] = user_data.user_identifier
             response_json["user_token"] = user_data.user_token
+            response_json["user_name"] = user_data.user_name
+            response_json["first_name"] = user_data.first_name
+            response_json["last_name"] = user_data.last_name
+            response_json["email"] = user_data.email
+            response_json["phone"] = user_data.phone
             return response_json, 201
-        # except (KeyError, ValueError, OperationalError):
-        #     return "Incomplete request - missing fields", 400
-        except (OperationalError):
-            return "Incomplete request - missing fields", 400
+        except (KeyError, ValueError, OperationalError):
+            return "General error o7, please contact administrators", 400
 
 
 class AttendeeItem(Resource):
@@ -638,8 +657,8 @@ class AttendeeItem(Resource):
             return "Event not found", 404
 
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
-            if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
+            user_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
         try:
@@ -682,30 +701,47 @@ class AttendeeItem(Resource):
 
         # check authentication, continue if request contains correct creator_token or user_token
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
-            if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
+            user_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
         try:
 
             # check if request contains information and save that info to dict
             if "user_name" in request.json:
-                attendee_item.user_name = request.json["user_name"]
+                user_item.user_name = request.json["user_name"]
             if "first_name" in request.json:
-                attendee_item.first_name = request.json["first_name"]
+                user_item.first_name = request.json["first_name"]
             if "last_name" in request.json:
-                attendee_item.last_name = request.json["last_name"]
+                user_item.last_name = request.json["last_name"]
             if "email" in request.json:
-                attendee_item.email = request.json["email"]
+                user_item.email = request.json["email"]
             if "phone" in request.json:
-                attendee_item.phone = request.json["phone"]
+                user_item.phone = request.json["phone"]
 
             # commit changes to db and return 201
             db.session.commit()
-            return 201
 
+            response_template = json.dumps(
+                {
+                    "user_identifier":"",
+                    "user_name":"",
+                    "first_name":"",
+                    "last_name":"",
+                    "email":"",
+                    "phone":""
+                })
+            response_json = json.loads(response_template)
+            response_json["user_identifier"] = user_item.user_identifier
+            response_json["user_token"] = user_item.user_token
+            response_json["user_name"] = user_item.user_name
+            response_json["first_name"] = user_item.first_name
+            response_json["last_name"] = user_item.last_name
+            response_json["email"] = user_item.email
+            response_json["phone"] = user_item.phone
+            return response_json, 201
         except (KeyError, ValueError, OperationalError):
-            return "Incomplete request - missing fields", 400
+            return "General error o7, please contact administrators", 400
 
 
     def delete(self, event_identifier, attendee_id):
@@ -722,14 +758,14 @@ class AttendeeItem(Resource):
 
         # check authentication, continue if request contains correct creator_token or user_token
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
-            if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
+            user_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
         try:
             User.query.filter_by(user_identifier=attendee_id).delete()
             db.session.commit()
-            return 204
+            return "OK", 204
         except (KeyError, ValueError, OperationalError):
             return "Incomplete request - missing fields", 400
 
