@@ -53,8 +53,8 @@ def _populate_db():
         )
         app.db.session.add(event)
         app.db.session.add(user)
-        test_events.append(event)
-        test_users.append(user)
+        test_events.append(event.as_dict())
+        test_users.append(user.as_dict())
     app.db.session.commit()
 
 @pytest.fixture
@@ -77,8 +77,6 @@ def client():
 # tests
 
 def test_create_event(client):
-    # import pdb;pdb.set_trace()
-    # client.get("/event").json
     result = client.post(
         "/event",
         json={
@@ -98,10 +96,7 @@ def test_create_event(client):
 
 
 def not_test_register_attendee(client):
-    # import pdb;pdb.set_trace()
-    # client.get("/event").json
-    pass
-    # import pdb;pdb.set_trace()
+    import pdb;pdb.set_trace()
     event_result = client.post(
         "/event",
         json={
