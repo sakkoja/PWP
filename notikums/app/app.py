@@ -315,8 +315,7 @@ class EventItem(Resource):
 
             # commit changes to db and return 201
             db.session.commit()
-            return 201
-
+            return "OK", 201
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "Incomplete request - missing fields", 400
 

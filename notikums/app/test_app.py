@@ -83,7 +83,6 @@ def _populate_db():
 @pytest.fixture
 def client():
     db_fd, db_fname = tempfile.mkstemp()
-    # import pdb;pdb.set_trace()
 
     app.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + db_fname
     app.app.config["TESTING"] = True
@@ -133,28 +132,20 @@ def test_create_event_negative(client):
     # what we assume we got in the response
     assert result.status_code == 415
 
-def test_create_event_negative(client):
-    result = client.post(
-        EVENT_RESOURCE_URL,
+def test_update_event_positive(client):
+    # import pdb;pdb.set_trace()
+    result = client.put(
+        event_url(test_events[1].get("identifier")),
         json={
-            "title":"eventti",
-            "time":"2020-02-02T00:00:00+0200",
-            "creator_name":"sakkoja",
-            "description":"this is an event",
-            "image":"http://google.com"
+            "title": "new-title"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
         }
     )
     print(result)
     print(result.json)
-    # what we assume we got in the response
-    assert result.status_code == 415
-
-def test_update_event_positive(client):
-    pass
-    # result = client.put(
-    #     event_url(test_events[1]),
-
-    # )
+    assert result.status_code == 201
 
 def test_update_event_negative(client):
     pass
