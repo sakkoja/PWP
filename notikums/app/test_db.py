@@ -38,7 +38,7 @@ def db_handle():
 # tests    
 
 def test_create_users_positive(db_handle):
-    user = User(user_token="token", user_name="user_name")
+    user = User(user_token="token", user_name="user_name", user_identifier="user_identifier")
     db_handle.session.add(user)
     db_handle.session.commit()
     assert User.query.count() == 1
@@ -51,7 +51,7 @@ def test_create_event_positive(db_handle):
     assert Event.query.count() == 1
 
 def test_create_full_users_positive(db_handle):
-    user = User(user_token="token", user_name="user_name", first_name="Test", last_name="User", email="testmail@test.com", phone="0441234567")
+    user = User(user_token="token", user_name="user_name", user_identifier="user_identifier", first_name="Test", last_name="User", email="testmail@test.com", phone="0441234567")
     db_handle.session.add(user)
     db_handle.session.commit()
     assert User.query.count() == 1
@@ -105,7 +105,7 @@ def test_create_event_negative(db_handle):
 
 def test_create_event_attendee(db_handle):
     event = Event(creator_token="token", title="test event", time=datetime.utcnow(), location="here", identifier="12345678")
-    attendee = User(user_token="token", user_name="user_name")
+    attendee = User(user_token="token", user_name="user_name", user_identifier="user_identifier")
     # add the event for the attendee, should back populate to the events
     attendee.event = event
     db_handle.session.add(event)

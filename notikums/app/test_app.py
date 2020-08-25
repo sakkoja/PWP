@@ -47,7 +47,8 @@ def _populate_db():
         user = User(
             user_token="token{}".format(i),
             user_name="user-name{}".format(i),
-            event_id=event.id
+            event_id=event.id,
+            user_identifier="user-identifier-{}".format(i)
         )
         app.db.session.add(event)
         app.db.session.add(user)

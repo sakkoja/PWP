@@ -117,9 +117,9 @@ class User(db.Model):
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    identifier = db.Column(db.String(8), unique=True, nullable=False) #this is exposed in API to identify events
+    identifier = db.Column(db.String(8), unique=True, nullable=False)  # this is exposed in API to identify events
     creator_name = db.Column(db.String(64), nullable=True)
-    creator_token = db.Column(db.Integer, nullable=False)
+    creator_token = db.Column(db.String(64), nullable=False)
     title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.String(256), nullable=True)
     time = db.Column(db.DateTime, nullable=False)
