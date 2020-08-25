@@ -185,6 +185,8 @@ class EventCollection(Resource):
             event_creator_name = request.json["creator_name"]
             event_description = request.json["description"]
             event_image = request.json["image"]
+
+            # TODO: check uniqueness before committing to db
             event_creator_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
             event_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
             new_event = Event(
@@ -431,13 +433,14 @@ class AttendeeCollection(Resource):
                 attendee_info["phone"] = request.json["phone"]
 
             # create unique user identifier
-            # TODO: how to check uniqueness?
+            # TODO: check uniqueness before committing to db
             attendee_info["user_identifier"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
             
             # create secret token for user to modify or remove event participation later
             attendee_info["user_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
 
             # create new db entry for new user
+            # TODO: change request handling to not save empty strings if value is not given
             new_attendee = User(
                 event=event_item,
                 event_id=event_identifier,
