@@ -83,7 +83,6 @@ def _populate_db():
 @pytest.fixture
 def client():
     db_fd, db_fname = tempfile.mkstemp()
-    # import pdb;pdb.set_trace()
 
     app.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + db_fname
     app.app.config["TESTING"] = True
@@ -98,6 +97,67 @@ def client():
     os.unlink(db_fname)
 
 # tests
+
+def test_get_event_collection_positive(client):
+    resp = client.get(EVENT_RESOURCE_URL)
+    assert resp.status_code == 200
+    for item in resp.json:
+        assert "identifier" in item
+        assert "title" in item
+        assert "time" in item
+        assert "location" in item
+
+def test_get_event_positive(client):
+    resp = client.get(event_url("identifier1"))
+    assert resp.status_code == 200
+    assert "identifier" in resp.json
+    assert "title" in resp.json
+    assert "time" in resp.json
+    assert "location" in resp.json
+
+def test_get_event_negative(client):
+    resp = client.get(event_url("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_image_positive(client):
+    resp = client.get(event_image("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "image" in resp.json
+
+def test_get_event_image_negative(client):
+    resp = client.get(event_image("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_desc_positive(client):
+    resp = client.get(event_description("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "description" in resp.json
+
+def test_get_event_desc_negative(client):
+    resp = client.get(event_description("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_location_positive(client):
+    resp = client.get(event_location("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "location" in resp.json
+
+def test_get_event_location_negative(client):
+    resp = client.get(event_location("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_time_positive(client):
+    resp = client.get(event_time("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "time" in resp.json
+
+def test_get_event_time_negative(client):
+    resp = client.get(event_time("wrong_identifier"))
+    assert resp.status_code == 404
 
 def test_create_event_positive(client):
     result = client.post(
@@ -133,37 +193,54 @@ def test_create_event_negative(client):
     # what we assume we got in the response
     assert result.status_code == 415
 
-def test_create_event_negative(client):
-    result = client.post(
-        EVENT_RESOURCE_URL,
+def test_update_event_positive(client):
+    # import pdb;pdb.set_trace()
+    result = client.put(
+        event_url(test_events[1].get("identifier")),
         json={
-            "title":"eventti",
-            "time":"2020-02-02T00:00:00+0200",
-            "creator_name":"sakkoja",
-            "description":"this is an event",
-            "image":"http://google.com"
+            "title": "new-title"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
         }
     )
     print(result)
     print(result.json)
-    # what we assume we got in the response
-    assert result.status_code == 415
-
-def test_update_event_positive(client):
-    pass
-    # result = client.put(
-    #     event_url(test_events[1]),
-
-    # )
+    assert result.status_code == 201
 
 def test_update_event_negative(client):
-    pass
+    result = client.put(
+        event_url(test_events[1].get("identifier")),
+        json={
+            "title": "new-title"
+        },
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    print(result)
+    print(result.json)
+    assert result.status_code == 401
 
 def test_delete_event_positive(client):
-    pass
+    result = client.delete(
+        event_url(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    assert result.status_code == 204
 
 def test_delete_event_negative(client):
-    pass
+    result = client.delete(
+        event_url(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    print(result)
+    assert result.status_code == 401
 
 
 def test_register_attendee(client):

@@ -159,6 +159,7 @@ class Event(db.Model):
 
     attendees = db.relationship("User", back_populates="event")
 
+    # credit to https://stackoverflow.com/questions/5022066/how-to-serialize-sqlalchemy-result-to-json
     def as_dict(self):
        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
@@ -330,7 +331,7 @@ class EventItem(Resource):
         event_info = Event.query.filter_by(identifier=event_id).first()
         if not event_info:
             return "Event not found", 404
-        
+
         # check authentication
         if not authenticate_user(request.headers.get("Authorization"), event_info.creator_token):
             return "Authorization failed", 401
@@ -353,8 +354,7 @@ class EventItem(Resource):
 
             # commit changes to db and return 201
             db.session.commit()
-            return 201
-
+            return "OK", 201
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "Incomplete request - missing fields", 400
 
@@ -363,10 +363,10 @@ class EventItem(Resource):
         """delete event, requires creator token as header"""
         try:
             if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
-                return 401
+                return "Authorization failed", 401
             Event.query.filter_by(identifier=event_id).delete()
             db.session.commit()
-            return 204
+            return "OK", 204
         except AttributeError:
             return "Event not found", 404
 
