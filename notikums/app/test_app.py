@@ -34,7 +34,8 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 #     app.db.session.remove()
 #     os.close(db_fd)
 #     os.unlink(db_fname)
-
+test_events = []
+test_users = []
 def _populate_db():
     for i in range(1, 4):
         event = Event(
@@ -52,6 +53,8 @@ def _populate_db():
         )
         app.db.session.add(event)
         app.db.session.add(user)
+        test_events.append(event)
+        test_users.append(user)
     app.db.session.commit()
 
 @pytest.fixture
@@ -76,7 +79,45 @@ def client():
 def test_create_event(client):
     # import pdb;pdb.set_trace()
     # client.get("/event").json
+    result = client.post(
+        "/event",
+        json={
+            "title":"eventti",
+            "time":"2020-02-02T00:00:00+0200",
+            "location":"Tellus",
+            "creator_name":"sakkoja",
+            "description":"this is an event",
+            "image":"http://google.com"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    for assumed in ["creator_token", "identifier", "title"]:
+        assert assumed in result.json
+
+
+def not_test_register_attendee(client):
+    # import pdb;pdb.set_trace()
+    # client.get("/event").json
     pass
+    # import pdb;pdb.set_trace()
+    event_result = client.post(
+        "/event",
+        json={
+            "title":"eventti",
+            "time":"2020-02-02T00:00:00+0200",
+            "location":"Tellus",
+            "creator_name":"sakkoja",
+            "description":"this is an event",
+            "image":"http://google.com"
+        }
+    )
+    print(event_result)
+    print(event_result.json)
+    # what we assume we got in the response
+    for assumed in ["creator_token", "identifier", "title"]:
+        assert assumed in result.json
 
 
 # TODO:
