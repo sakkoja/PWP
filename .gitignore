@@ -1,3 +1,5 @@
 __pycache__/
 *.db
 *.log
+notikums/cov_html/*
+notikums/.coverage
