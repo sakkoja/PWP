@@ -111,6 +111,8 @@ class User(db.Model):
 
     event = db.relationship("Event", back_populates="attendees")
 
+    def as_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
     # def __repr__(self):
     #     return "{}".format(self.id, self.user_token)
 
@@ -128,6 +130,8 @@ class Event(db.Model):
 
     attendees = db.relationship("User", back_populates="event")
 
+    def as_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
     # def __repr__(self):
     #     return "{},{},{},{}".format(self.id, self.title, self.time, self.location, self.creator_name, self.description)
 
