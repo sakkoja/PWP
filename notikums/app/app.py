@@ -292,7 +292,7 @@ class EventItem(Resource):
         event_info = Event.query.filter_by(identifier=event_id).first()
         if not event_info:
             return "Event not found", 404
-        
+
         # check authentication
         if not authenticate_user(request.headers.get("Authorization"), event_info.creator_token):
             return "Authorization failed", 401
@@ -324,10 +324,10 @@ class EventItem(Resource):
         """delete event, requires creator token as header"""
         try:
             if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
-                return 401
+                return "Authorization failed", 401
             Event.query.filter_by(identifier=event_id).delete()
             db.session.commit()
-            return 204
+            return "OK", 204
         except AttributeError:
             return "Event not found", 404
 

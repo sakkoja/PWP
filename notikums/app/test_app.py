@@ -148,13 +148,38 @@ def test_update_event_positive(client):
     assert result.status_code == 201
 
 def test_update_event_negative(client):
-    pass
+    result = client.put(
+        event_url(test_events[1].get("identifier")),
+        json={
+            "title": "new-title"
+        },
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    print(result)
+    print(result.json)
+    assert result.status_code == 401
 
 def test_delete_event_positive(client):
-    pass
+    result = client.delete(
+        event_url(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    assert result.status_code == 204
 
 def test_delete_event_negative(client):
-    pass
+    result = client.delete(
+        event_url(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    print(result)
+    assert result.status_code == 401
 
 
 def test_register_attendee(client):
