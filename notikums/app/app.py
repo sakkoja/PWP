@@ -180,32 +180,56 @@ class EventCollection(Resource):
 
     def post(self):
         """create new event"""
+
+        # check if request is json and follows correct schema
         if not request.json or not validate_json(request.json, post_schema()):
             return "Request content type must be JSON", 415
-        try:
-            event_title = request.json["title"]
-            event_time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
-            event_location = request.json["location"]
-            event_creator_name = request.json["creator_name"]
-            event_description = request.json["description"]
-            event_image = request.json["image"]
 
+        try:
+
+            # create dict with empty values for all keys
+            event_info = {"identifier": "", "creator_token": "", "title": "", "time": "", "location": "", "creator_name": "", "description": "", "image": ""}
+
+            # check if request contains info and save the info to dict
+            if "title" in request.json:
+                event_info["title"] = request.json["title"]
+            if "time" in request.json:
+                event_info["time"] = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
+            if "location" in request.json:
+                event_info["location"] = request.json["location"]
+            if "creator_name" in request.json:
+                event_info["creator_name"] = request.json["creator_name"]
+            if "description" in request.json:
+                event_info["description"] = request.json["description"]
+            if "image" in request.json:
+                event_info["image"] = request.json["image"]
+
+            # create secret token for creator to modify or delete event later
+            event_info["creator_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
+
+            # create unique event identifier 
             # TODO: check uniqueness before committing to db
-            event_creator_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
-            event_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
+            event_info["identifier"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
+
+            # create new db entry for new event
+            # TODO: change request handling to not save empty strings if value is not given
             new_event = Event(
-                title=event_title,
-                identifier=event_identifier,
-                time=event_time,
-                location=event_location,
-                creator_name=event_creator_name,
-                creator_token=event_creator_token,
-                description=event_description,
-                image=event_image
+                title=event_info["title"],
+                identifier=event_info["identifier"],
+                time=event_info["time"],
+                location=event_info["location"],
+                creator_name=event_info["creator_name"],
+                creator_token=event_info["creator_token"],
+                description=event_info["description"],
+                image=event_info["image"]
             )
+
+            # add and commit changes to db
             db.session.add(new_event)
             db.session.commit()
-            event_data = Event.query.filter_by(identifier=event_identifier).first()
+
+            # db query to return information about created event in response
+            event_data = Event.query.filter_by(identifier=event_info["identifier"]).first()
             response_template = json.dumps(
                 {
                     "creator_token": "",
@@ -224,6 +248,12 @@ class EventItem(Resource):
 
     def get(self, event_id):
         """get specific event by id as JSON array"""
+
+        # check if event exists and continue
+        event_data = Event.query.filter_by(identifier=event_id).first()
+        if not event_data:
+            return "Event not found", 404
+
         try:
             response_template = json.dumps(
                 {
@@ -235,7 +265,6 @@ class EventItem(Resource):
                     "description":"",
                     "image":""
                 })
-            event_data = Event.query.filter_by(identifier=event_id).first()
             response_json = json.loads(response_template)
             response_json["title"] = event_data.title
             response_json["identifier"] = event_data.identifier
@@ -253,25 +282,35 @@ class EventItem(Resource):
 
     def put(self, event_id):
         """modify event, requires creator token as header"""
+
+        # check if request is json and follows correct schema
         if not request.json:
             return "Request content type must be JSON", 415
         if not authenticate_user(request.headers.get("Authorization"), Event.query.filter_by(identifier=event_id).first().creator_token):
-            return 401
+            return "Authorization failed", 401
+
+        # check if event exists and continue
+        event_info = Event.query.filter_by(identifier=event_id).first()
+        if not event_info:
+            return "Event not found", 404
+
         try:
-            event_title = request.json["title"]
-            event_time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
-            event_location = request.json["location"]
-            event_creator_name = request.json["creator_name"]
-            event_description = request.json["description"]
-            event_image = request.json["image"]
-            event_data = Event.query.filter_by(identifier=event_id).first()
-            #TODO: add check to what values to update
-            event_data.title = event_title
-            event_data.time = event_time
-            event_data.location = event_location
-            event_data.creator_name = event_creator_name
-            event_data.description = event_description
-            event_data.image = event_image
+
+            # check if request contains info and save the info
+            if "title" in request.json:
+                event_info.title = request.json["title"]
+            if "time" in request.json:
+                event_info.time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
+            if "location" in request.json:
+                event_info.location = request.json["location"]
+            if "creator_name" in request.json:
+                event_info.creator_name = request.json["creator_name"]
+            if "description" in request.json:
+                event_info.description = request.json["description"]
+            if "image" in request.json:
+                event_info.image = request.json["image"]
+
+            # commit changes to db
             db.session.commit()
             return 201
         except (KeyError, ValueError, IntegrityError, OperationalError):
@@ -399,27 +438,6 @@ class AttendeeCollection(Resource):
         if not request.json:
             return "Request content type must be JSON", 415
         try:
-            # if request.json["user_name"]:
-            #     attendee_user_name = request.json["user_name"]
-            # if request.json["first_name"]:
-            #     attendee_first_name = request.json["first_name"]
-            # if request.json["last_name"]:
-            #     attendee_last_name = request.json["last_name"]
-            # attendee_email = request.json["email"]
-            # attendee_phone = request.json["phone"]
-            # attendee_user_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
-            # attendee_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
-            # new_attendee = User(
-            #     event=event_item,
-            #     event_id=event_identifier,
-            #     user_identifier=attendee_user_identifier,
-            #     user_token=attendee_token,
-            #     user_name=attendee_user_name,
-            #     first_name=attendee_first_name,
-            #     last_name=attendee_last_name,
-            #     email=attendee_email,
-            #     phone=attendee_phone
-            # )
 
             # create dict with empty values for all keys
             attendee_info = {"user_identifier": "", "user_token": "", "user_name": "", "first_name": "", "last_name": "", "email": "", "phone": ""}
@@ -436,12 +454,12 @@ class AttendeeCollection(Resource):
             if "phone" in request.json:
                 attendee_info["phone"] = request.json["phone"]
 
+            # create secret token for user to modify or remove event participation later
+            attendee_info["user_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
+
             # create unique user identifier
             # TODO: check uniqueness before committing to db
             attendee_info["user_identifier"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
-            
-            # create secret token for user to modify or remove event participation later
-            attendee_info["user_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
 
             # create new db entry for new user
             # TODO: change request handling to not save empty strings if value is not given
