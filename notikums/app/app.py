@@ -328,33 +328,54 @@ class EventItem(Resource):
             return "Request content type must be JSON", 415
 
         # check if event exists and continue
-        event_info = Event.query.filter_by(identifier=event_id).first()
-        if not event_info:
+        event_data = Event.query.filter_by(identifier=event_id).first()
+        if not event_data:
             return "Event not found", 404
 
         # check authentication
-        if not authenticate_user(request.headers.get("Authorization"), event_info.creator_token):
+        if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
             return "Authorization failed", 401
 
         try:
 
             # check if request contains info and save the info
             if "title" in request.json:
-                event_info.title = request.json["title"]
+                event_data.title = request.json["title"]
             if "time" in request.json:
-                event_info.time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
+                event_data.time = datetime.datetime.strptime(request.json["time"], "%Y-%m-%dT%H:%M:%S%z")
             if "location" in request.json:
-                event_info.location = request.json["location"]
+                event_data.location = request.json["location"]
             if "creator_name" in request.json:
-                event_info.creator_name = request.json["creator_name"]
+                event_data.creator_name = request.json["creator_name"]
             if "description" in request.json:
-                event_info.description = request.json["description"]
+                event_data.description = request.json["description"]
             if "image" in request.json:
-                event_info.image = request.json["image"]
+                event_data.image = request.json["image"]
 
             # commit changes to db and return 201
             db.session.commit()
-            return "OK", 201
+
+            response_template = json.dumps(
+                {
+                    "creator_token": "",
+                    "title":"",
+                    "identifier":"",
+                    "time":"",
+                    "location":"",
+                    "creator_name":"",
+                    "description":"",
+                    "image":""
+                })
+            response_json = json.loads(response_template)
+            response_json["creator_token"] = event_data.creator_token
+            response_json["title"] = event_data.title
+            response_json["identifier"] = event_data.identifier
+            response_json["time"] = (event_data.time).strftime("%Y-%m-%dT%H:%M:%S%z")
+            response_json["location"] = event_data.location
+            response_json["creator_name"] = event_data.creator_name
+            response_json["description"] = event_data.description
+            response_json["image"] = event_data.image
+            return response_json, 201
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "Incomplete request - missing fields", 400
 
