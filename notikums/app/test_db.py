@@ -67,8 +67,9 @@ def test_create_users_negative(db_handle):
     # test that invalid users can't be added to the database
     users = [
         User(),
-        User(user_token="token", user_name=None),
-        User(user_token=None, user_name="user_name")
+        User(user_token="token", user_name=None, user_identifier="ping"),
+        User(user_token=None, user_name="user_name", user_identifier="ping"),
+        User(user_token="token", user_name="user_name", user_identifier=None)
         #User(user_token="a" * 120, user_name="user_name"),  # do we want to enforce the lenght of columns? https://stackoverflow.com/questions/2317081/sqlalchemy-maximum-column-length
     ]
     for user in users:
