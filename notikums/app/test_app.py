@@ -99,9 +99,9 @@ def client():
 
 # tests
 
-def test_create_event(client):
+def test_create_event_positive(client):
     result = client.post(
-        "/event",
+        EVENT_RESOURCE_URL,
         json={
             "title":"eventti",
             "time":"2020-02-02T00:00:00+0200",
@@ -117,26 +117,64 @@ def test_create_event(client):
     for assumed in ["creator_token", "identifier", "title"]:
         assert assumed in result.json
 
-
-def not_test_register_attendee(client):
-    import pdb;pdb.set_trace()
-    event_result = client.post(
-        "/event",
+def test_create_event_negative(client):
+    result = client.post(
+        EVENT_RESOURCE_URL,
         json={
             "title":"eventti",
             "time":"2020-02-02T00:00:00+0200",
-            "location":"Tellus",
             "creator_name":"sakkoja",
             "description":"this is an event",
             "image":"http://google.com"
         }
     )
-    print(event_result)
-    print(event_result.json)
+    print(result)
+    print(result.json)
     # what we assume we got in the response
-    for assumed in ["creator_token", "identifier", "title"]:
+    assert result.status_code == 415
+
+def test_create_event_negative(client):
+    result = client.post(
+        EVENT_RESOURCE_URL,
+        json={
+            "title":"eventti",
+            "time":"2020-02-02T00:00:00+0200",
+            "creator_name":"sakkoja",
+            "description":"this is an event",
+            "image":"http://google.com"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 415
+
+def test_update_event_positive(client):
+    pass
+    # result = client.put(
+    #     event_url(test_events[1]),
+
+    # )
+
+def test_update_event_negative(client):
+    pass
+
+def test_delete_event_positive(client):
+    pass
+
+def test_delete_event_negative(client):
+    pass
+
+
+def test_register_attendee(client):
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name":"tester"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    for assumed in ["user_token", "user_identifier"]:
         assert assumed in result.json
-
-
-# TODO:
-# * muokkaa projektin rakenne kunnolliseksi single filen sijaan.
