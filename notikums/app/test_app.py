@@ -241,6 +241,14 @@ def test_delete_event_negative(client):
     )
     print(result)
     assert result.status_code == 401
+    result = client.delete(
+        event_url(test_events[1].get("wrong_identifier")),
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    print(result)
+    assert result.status_code == 404
 
 
 def test_register_attendee(client):
