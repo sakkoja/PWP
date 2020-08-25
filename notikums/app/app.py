@@ -393,29 +393,69 @@ class AttendeeCollection(Resource):
         if not request.json:
             return "Request content type must be JSON", 415
         try:
-            attendee_user_name = request.json["user_name"]
-            attendee_first_name = request.json["first_name"]
-            attendee_last_name = request.json["last_name"]
-            attendee_email = request.json["email"]
-            attendee_phone = request.json["phone"]
-            attendee_user_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
-            attendee_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
+            # if request.json["user_name"]:
+            #     attendee_user_name = request.json["user_name"]
+            # if request.json["first_name"]:
+            #     attendee_first_name = request.json["first_name"]
+            # if request.json["last_name"]:
+            #     attendee_last_name = request.json["last_name"]
+            # attendee_email = request.json["email"]
+            # attendee_phone = request.json["phone"]
+            # attendee_user_identifier = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
+            # attendee_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
+            # new_attendee = User(
+            #     event=event_item,
+            #     event_id=event_identifier,
+            #     user_identifier=attendee_user_identifier,
+            #     user_token=attendee_token,
+            #     user_name=attendee_user_name,
+            #     first_name=attendee_first_name,
+            #     last_name=attendee_last_name,
+            #     email=attendee_email,
+            #     phone=attendee_phone
+            # )
+
+            # create dict with empty values for all keys
+            attendee_info = {"user_identifier": "", "user_token": "", "user_name": "", "first_name": "", "last_name": "", "email": "", "phone": ""}
+
+            # check if request contains information and save that info to dict
+            if "user_name" in request.json:
+                attendee_info["user_name"] = request.json["user_name"]
+            if "first_name" in request.json:
+                attendee_info["first_name"] = request.json["first_name"]
+            if "last_name" in request.json:
+                attendee_info["last_name"] = request.json["last_name"]
+            if "email" in request.json:
+                attendee_info["email"] = request.json["email"]
+            if "phone" in request.json:
+                attendee_info["phone"] = request.json["phone"]
+
+            # create unique user identifier
+            # TODO: how to check uniqueness?
+            attendee_info["user_identifier"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
+            
+            # create secret token for user to modify or remove event participation later
+            attendee_info["user_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
+
+            # create new db entry for new user
             new_attendee = User(
                 event=event_item,
                 event_id=event_identifier,
-                user_identifier=attendee_user_identifier,
-                user_token=attendee_token,
-                user_name=attendee_user_name,
-                first_name=attendee_first_name,
-                last_name=attendee_last_name,
-                email=attendee_email,
-                phone=attendee_phone
+                user_identifier=attendee_info["user_identifier"],
+                user_token=attendee_info["user_token"],
+                user_name=attendee_info["user_name"],
+                first_name=attendee_info["first_name"],
+                last_name=attendee_info["last_name"],
+                email=attendee_info["email"],
+                phone=attendee_info["phone"]
             )
+
+            # add and commit changes to db
             db.session.add(new_attendee)
             db.session.commit()
-            # import pdb
-            # pdb.set_trace()
-            user_data = User.query.filter_by(user_identifier=attendee_user_identifier).first()
+
+            # db query to return user_identifier and user_token as response after joining event
+            user_data = User.query.filter_by(user_identifier=attendee_info["user_identifier"]).first()
             response_template = json.dumps(
                 {
                     "user_identifier":"",
@@ -425,7 +465,9 @@ class AttendeeCollection(Resource):
             response_json["user_identifier"] = user_data.user_identifier
             response_json["user_token"] = user_data.user_token
             return response_json, 201
-        except (KeyError, ValueError, OperationalError):
+        # except (KeyError, ValueError, OperationalError):
+        #     return "Incomplete request - missing fields", 400
+        except (OperationalError):
             return "Incomplete request - missing fields", 400
 
 
@@ -498,7 +540,7 @@ class AttendeeItem(Resource):
             return "Authentication failed", 401
 
         attendee_item = User.query.filter_by(user_identifier=attendee_id).first()
-        if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token)
+        if not authenticate_user(request.headers.get("Authorization"), attendee_item.user_token):
             return "authentication failed", 401
 
         try:
