@@ -99,6 +99,67 @@ def client():
 
 # tests
 
+def test_get_event_collection_positive(client):
+    resp = client.get(EVENT_RESOURCE_URL)
+    assert resp.status_code == 200
+    for item in resp.json:
+        assert "identifier" in item
+        assert "title" in item
+        assert "time" in item
+        assert "location" in item
+
+def test_get_event_positive(client):
+    resp = client.get(event_url("identifier1"))
+    assert resp.status_code == 200
+    assert "identifier" in resp.json
+    assert "title" in resp.json
+    assert "time" in resp.json
+    assert "location" in resp.json
+
+def test_get_event_negative(client):
+    resp = client.get(event_url("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_image_positive(client):
+    resp = client.get(event_image("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "image" in resp.json
+
+def test_get_event_image_negative(client):
+    resp = client.get(event_image("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_desc_positive(client):
+    resp = client.get(event_description("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "description" in resp.json
+
+def test_get_event_desc_negative(client):
+    resp = client.get(event_description("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_location_positive(client):
+    resp = client.get(event_location("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "location" in resp.json
+
+def test_get_event_location_negative(client):
+    resp = client.get(event_location("wrong_identifier"))
+    assert resp.status_code == 404
+
+def test_get_event_time_positive(client):
+    resp = client.get(event_time("identifier1"))
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert "time" in resp.json
+
+def test_get_event_time_negative(client):
+    resp = client.get(event_time("wrong_identifier"))
+    assert resp.status_code == 404
+
 def test_create_event_positive(client):
     result = client.post(
         EVENT_RESOURCE_URL,
