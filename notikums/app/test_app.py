@@ -98,6 +98,10 @@ def client():
 
 # tests
 
+def test_get_root(client):
+    resp = client.get("/")
+    assert resp.status_code == 200
+
 def test_get_event_collection_positive(client):
     resp = client.get(EVENT_RESOURCE_URL)
     assert resp.status_code == 200
