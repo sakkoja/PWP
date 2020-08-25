@@ -41,10 +41,15 @@ def validate_json(jsonData, jsonSchema):
     return True
 
 # schemas for event, user and image
-def event_schema():
+def post_event_schema():
+        schema = put_event_schema()
+        schema["required"] = ["title", "time", "location"]
+        return schema
+
+def put_event_schema():
         schema = {
             "type": "object",
-            "required": ["title", "time", "location"],
+            # "required": ["title", "time", "location"],
             # "optional": ["creator_name", "description", "image"]
         }
         props = schema["properties"] = {}
@@ -211,7 +216,7 @@ class EventCollection(Resource):
         """create new event"""
 
         # check if request is json and follows correct schema
-        if not request.json or not validate_json(request.json, event_schema()):
+        if not request.json or not validate_json(request.json, post_event_schema()):
             return "Request content type must be JSON", 415
 
         try:
@@ -324,7 +329,7 @@ class EventItem(Resource):
         """modify event, requires creator token as header"""
 
         # check if request is json and follows correct schema
-        if not request.json or not validate_json(request.json, event_schema()):
+        if not request.json or not validate_json(request.json, put_event_schema()):
             return "Request content type must be JSON", 415
 
         # check if event exists and continue
