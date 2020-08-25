@@ -36,13 +36,13 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 #     os.unlink(db_fname)
 test_events = []
 test_users = []
-EVENT_RESOURCE_URL = "/event/"
+EVENT_RESOURCE_URL = "/event"
 
 def event_url(event_id):
     return "/event/{}".format(event_id)
 
 def event_attendees_url(event_id):
-    return event_url(event_id) + "/attedees"
+    return event_url(event_id) + "/attendees"
 
 def event_specific_attendee_url(event_id, attendee_id):
     return event_url(event_id) + "/attendees/{}".format(attendee_id)
