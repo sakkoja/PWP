@@ -1,5 +1,5 @@
 import json, datetime, random, string, jsonschema, logging
-from flask import Flask, request
+from flask import Flask, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
 from flask_restful import Resource, Api
@@ -182,8 +182,8 @@ class ApiRoot(Resource):
 
     def get(self):
         """Notikums landing page and descriptions"""
-        return "Well hello there. API documentation is available in Apiary https://notikums.docs.apiary.io/#", 200
-
+        #return "Well hello there. API documentation is available in Apiary https://notikums.docs.apiary.io/#", 200
+        return redirect("https://notikums.docs.apiary.io/#")
 
 class EventCollection(Resource):
 
@@ -652,17 +652,22 @@ class AttendeeItem(Resource):
     def get(self, event_identifier, attendee_id):
         """get information of one attendee as JSON array"""
 
+        # check if event exists and continue
         event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
 
+        # check if user exists and continue
+        user_item = User.query.filter_by(user_identifier=attendee_id).first()
+        if not user_item:
+            return "User not found", 404
+
+        # check authentication, continue if request contains correct creator_token or user_token
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            user_item = User.query.filter_by(user_identifier=attendee_id).first()
             if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
         try:
-            response_data = []
             response_template = json.dumps(
                 {
                     "user_identifier":"",
@@ -672,18 +677,17 @@ class AttendeeItem(Resource):
                     "email":"",
                     "phone":""
                 })
-            for attendee in event_item.attendees:
-                response_json = json.loads(response_template)
-                response_json["user_identifier"] = attendee.user_identifier
-                response_json["user_name"] = attendee.user_name
-                response_json["first_name"] = attendee.first_name
-                response_json["last_name"] = attendee.last_name
-                response_json["email"] = attendee.email
-                response_json["phone"] = attendee.phone
-                response_data.append(response_json)
-            return response_data, 200
+
+            response_json = json.loads(response_template)
+            response_json["user_identifier"] = user_item.user_identifier
+            response_json["user_name"] = user_item.user_name
+            response_json["first_name"] = user_item.first_name
+            response_json["last_name"] = user_item.last_name
+            response_json["email"] = user_item.email
+            response_json["phone"] = user_item.phone
+            return response_json, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
     def put(self, event_identifier, attendee_id):
@@ -767,7 +771,7 @@ class AttendeeItem(Resource):
             db.session.commit()
             return "OK", 204
         except (KeyError, ValueError, OperationalError):
-            return "Incomplete request - missing fields", 400
+            return "General error o7, please contact administrators", 400
 
 
 class EventTime(Resource):
@@ -793,7 +797,7 @@ class EventTime(Resource):
         except AttributeError:
             return "Event not found", 404
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
 class EventLocation(Resource):
@@ -819,7 +823,7 @@ class EventLocation(Resource):
         except AttributeError:
             return "Event not found", 404
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
 class EventDescription(Resource):
@@ -845,7 +849,7 @@ class EventDescription(Resource):
         except AttributeError:
             return "Event not found", 404
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
 class EventImage(Resource):
@@ -871,7 +875,7 @@ class EventImage(Resource):
         except AttributeError:
             return "Event not found", 404
         except (KeyError, ValueError, IntegrityError, OperationalError):
-            return "General error o7", 400
+            return "General error o7, please contact administrators", 400
 
 
     def post(self, event_id):
@@ -952,25 +956,25 @@ api.add_resource(EventDescription, "/event/<event_id>/description")
 api.add_resource(EventImage, "/event/<event_id>/image")
 
 
+# get list of events with GET
+# curl -i -X GET http://localhost:5000/event
+
 # create event with POST
 # curl -i -X POST -H 'Content-Type: application/json' --data @<json_filename>.json http://localhost:5000/event
-
-
 
 # Modify event with PUT
 # curl -i -X PUT -H 'Content-Type: application/json' -H 'Authorization: Basic <creator_token>' --data @<json_filename>.json http://localhost:5000/event/<event_id>
 
-# Get event attendee list
+# Get event attendee list with GET
 # curl -i -X GET -H 'Authorization: Basic <creator_token>' http://localhost:5000/event/<event_id>/attendees
 
 # Create event attendee with POST
 # curl -i -X POST -H 'Content-Type: application/json' -H 'Authorization: Basic <creator_token>' --data @<json_filename>.json http://localhost:5000/event/<event_id>
 
-
-# Update event image
+# Update event image with PUT
 # curl -i -X POST -H "Content-Type: application/json" -H 'Authorization: Basic <creator_token>' --data '{"image": "/dev/null"}' localhost:5000/event/<event_id>/image
 
-# Delete event image
+# Delete event image with DELETE
 # curl -i -X DELETE -H 'Authorization: Basic <creator_token>' localhost:5000/event/<event_id>/image
 
 # Example json:
