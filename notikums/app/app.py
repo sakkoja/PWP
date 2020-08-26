@@ -12,11 +12,13 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///notikums.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
-# basic user authentication, compare token in request to token in db
-# TODO: improve token handling
+# basic user authentication, check that auth type is 'Basic' and compare token in request to token in db
 def authenticate_user(client_token, stored_token):
     """compare token stored in db with token given in request"""
-    if client_token != ("Basic " + stored_token):
+    auth_type, auth_token = client_token.split(" ", 1)
+    if auth_type != "Basic":
+        return False
+    if auth_token != stored_token:
         return False
     return True
 
