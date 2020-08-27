@@ -421,3 +421,33 @@ def test_delete_attendee_negative(client):
     # what we assume we got in the response
     for assumed in ["user_token", "user_identifier"]:
         assert assumed in result.json
+
+
+def test_get_single_attendee_positive(client):
+    pass
+    # get with the user_token
+    # get with the creator_token
+    # check that only that user info is returned and its legit
+
+
+def test_get_single_attendee_negative(client):
+    pass
+    # get with wrong token
+
+def test_get_all_attendees_posivive(client):
+    pass
+    # get with creator_token
+
+
+def test_get_all_attendees_negative(client):
+    pass
+    # get with user_token (should fail when getting all)
+    # get with wrong token
+
+
+def test_update_image_positive(client):
+    pass
+
+
+def test_update_image_negative(client):
+    pass

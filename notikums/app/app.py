@@ -248,8 +248,7 @@ class EventCollection(Resource):
             # create secret token for creator to modify or delete event later
             event_info["creator_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(64))
 
-            # create unique event identifier 
-            # TODO: check uniqueness before committing to db
+            # create unique event identifier
             event_info["identifier"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(8))
 
             # create new db entry for new event
@@ -530,9 +529,14 @@ class AttendeeCollection(Resource):
             # create dict with empty values for all keys
             attendee_info = {"user_identifier": "", "user_token": "", "user_name": "", "first_name": "", "last_name": "", "email": "", "phone": ""}
 
+            # check for duplicate usernames within event
+            for attendee in event_item.attendees:
+                if request.json["user_name"] == attendee.user_name:
+                    return "Username is in use", 409
+
             # check if request contains information and save that info to dict
-            if "user_name" in request.json:
-                attendee_info["user_name"] = request.json["user_name"]
+            # user_name is required, so no need to check it
+            attendee_info["user_name"] = request.json["user_name"]
             if "first_name" in request.json:
                 attendee_info["first_name"] = request.json["first_name"]
             if "last_name" in request.json:
@@ -546,7 +550,6 @@ class AttendeeCollection(Resource):
             attendee_info["user_token"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for j in range(64))
 
             # create unique user identifier
-            # TODO: check uniqueness before committing to db
             attendee_info["user_identifier"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for i in range(8))
 
             # create new db entry for new user
@@ -697,15 +700,18 @@ class AttendeeItem(Resource):
         if not request.json or not validate_json(request.json, put_user_schema()):
             return "Request content type must be JSON", 415
 
-
         # check if event exists and continue
         event_item = Event.query.filter_by(identifier=event_identifier).first()
         if not event_item:
             return "Event not found", 404
 
+        # check if user exists and continue
+        user_item = User.query.filter_by(user_identifier=attendee_id).first()
+        if not user_item:
+            return "User not found", 404
+
         # check authentication, continue if request contains correct creator_token or user_token
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            user_item = User.query.filter_by(user_identifier=attendee_id).first()
             if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
@@ -713,7 +719,13 @@ class AttendeeItem(Resource):
 
             # check if request contains information and save that info to dict
             if "user_name" in request.json:
+
+                # check for duplicate usernames within event
+                for attendee in event_item.attendees:
+                    if ((request.json["user_name"] == attendee.user_name) & (request.json["user_name"] != user_item.user_name)):
+                        return "Username is in use", 409
                 user_item.user_name = request.json["user_name"]
+
             if "first_name" in request.json:
                 user_item.first_name = request.json["first_name"]
             if "last_name" in request.json:
