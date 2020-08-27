@@ -446,8 +446,92 @@ def test_get_all_attendees_negative(client):
 
 
 def test_update_image_positive(client):
-    pass
-
+    result = client.post(
+        event_image(test_events[1].get("identifier")),
+        json={
+            "image": "http://newimagelocation.org"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 201
+    assert result.json
 
 def test_update_image_negative(client):
-    pass
+    result = client.post(
+        event_image("wrong-identifier"),
+        json={
+            "image": "http://newimagelocation.org"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 404
+
+    result = client.post(
+        event_image(test_events[1].get("identifier")),
+        json={
+            "image": "http://newimagelocation.org"
+        },
+        headers={
+            "Authorization": "Basic " + "wrong-token"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 401
+
+    result = client.post(
+        event_image(test_events[1].get("identifier")),
+        json={
+            "image": ("a") * 257
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 415
+
+def test_delete_image_positive(client):
+    result = client.delete(
+        event_image(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    # what we assume we got in the response
+    assert result.status_code == 204
+
+def test_delete_image_negative(client):
+    result = client.delete(
+        event_image(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + "totally-wrong-token"
+        }
+    )
+    print(result)
+    # what we assume we got in the response
+    assert result.status_code == 401
+
+    result = client.delete(
+        event_image("wrong-identifier"),
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    # what we assume we got in the response
+    assert result.status_code == 404
