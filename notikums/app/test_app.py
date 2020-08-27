@@ -71,7 +71,8 @@ def _populate_db():
         user = User(
             user_token="token{}".format(i),
             user_name="user-name{}".format(i),
-            event_id=event.id,
+            event=event,
+            event_id=event.identifier,
             user_identifier="user-identifier-{}".format(i)
         )
         app.db.session.add(event)
@@ -424,25 +425,85 @@ def test_delete_attendee_negative(client):
 
 
 def test_get_single_attendee_positive(client):
-    pass
     # get with the user_token
+    result = client.get(
+        event_specific_attendee_url(test_events[-1]["identifier"], test_users[-1]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_users[-1]["user_token"]
+        }
+    )
+    assert result.status_code == 200
+    for item in result.json:
+        assert item in test_users[-1]
+
     # get with the creator_token
-    # check that only that user info is returned and its legit
+    result = client.get(
+        event_specific_attendee_url(test_events[-1]["identifier"], test_users[-1]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_events[-1]["creator_token"]
+        }
+    )
+    assert result.status_code == 200
+    for item in result.json:
+        assert item in test_users[-1]
 
 
 def test_get_single_attendee_negative(client):
-    pass
-    # get with wrong token
+    result = client.get(
+        event_specific_attendee_url(test_events[-1]["identifier"], test_users[-1]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    assert result.status_code == 401
+    # Not found
+    result = client.get(
+        event_specific_attendee_url(test_events[-1]["identifier"], "doesnt-exist"),
+        headers={
+            "Authorization": "Basic " + test_events[-1]["creator_token"]
+        }
+    )
+    assert result.status_code == 404
+    result = client.get(
+        event_specific_attendee_url("doesnt-exist", test_users[-1]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_users[-1]["user_token"]
+        }
+    )
+    assert result.status_code == 404
+
 
 def test_get_all_attendees_posivive(client):
-    pass
-    # get with creator_token
+    # could perhaps create a separate test event with multiple attendees
+    result = client.get(
+        event_attendees_url(test_events[-1]["identifier"]),
+        headers={
+            "Authorization": "Basic " + test_events[-1]["creator_token"]
+        }
+    )
+    assert result.status_code == 200
+    for event in result.json:
+        for item in event:
+            assert item in test_users[-1]
 
 
 def test_get_all_attendees_negative(client):
-    pass
-    # get with user_token (should fail when getting all)
-    # get with wrong token
+    # invalid token
+    result = client.get(
+        event_attendees_url(test_events[-1]["identifier"]),
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
+        }
+    )
+    assert result.status_code == 401
+    # inexistent event
+    result = client.get(
+        event_attendees_url("inexistent-event"),
+        headers={
+            "Authorization": "Basic " + test_events[-1]["creator_token"]
+        }
+    )
+    assert result.status_code == 404
 
 
 def test_update_image_positive(client):
