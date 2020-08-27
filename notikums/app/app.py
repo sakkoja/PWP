@@ -402,6 +402,8 @@ class EventItem(Resource):
             return "Authorization failed", 401
 
         try:
+            for attendee in event_data.attendees:
+                User.query.filter_by(user_identifier=attendee.user_identifier).delete()
             Event.query.filter_by(identifier=event_id).delete()
             db.session.commit()
             return "OK", 204
