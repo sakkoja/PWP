@@ -765,23 +765,22 @@ class AttendeeItem(Resource):
     def delete(self, event_identifier, attendee_id):
         """delete participation, requires """
 
-        # check if request is json and follows correct schema
-        if not request.json:
-            return "Request content type must be JSON", 415
-
         # check if event exists and continue
         event_item = Event.query.filter_by(identifier=event_identifier).first()
+        user_item = User.query.filter_by(user_identifier=attendee_id).first()
         if not event_item:
             return "Event not found", 404
 
         # check authentication, continue if request contains correct creator_token or user_token
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            user_item = User.query.filter_by(user_identifier=attendee_id).first()
             if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
+        if not user_item:
+            return "User not found", 404
+
         try:
-            User.query.filter_by(user_identifier=attendee_id).delete()
+            test = User.query.filter_by(user_identifier=attendee_id).delete()
             db.session.commit()
             return "OK", 204
         except (KeyError, ValueError, OperationalError):
