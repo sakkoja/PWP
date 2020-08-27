@@ -330,6 +330,25 @@ def test_register_attendee_negative(client):
     # what we assume we got in the response
     assert result.status_code == 415
 
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name": "testing"
+        }
+    )
+    print(result)
+    print(result.json)
+    result = client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name": "testing"
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 409
+
 
 def test_update_attendee_positive(client):
     result = client.put(
@@ -368,7 +387,21 @@ def test_update_attendee_negative(client):
     assert result.status_code == 401
 
     result = client.put(
-        event_specific_attendee_url("wrong-identifier", "wrong-identifier"),
+        event_specific_attendee_url(test_events[0].get("identifier"), "wrong-identifier"),
+        json={
+            "user_name":"tester"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[0].get("user_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 404
+
+    result = client.put(
+        event_specific_attendee_url("wrong-identifier", test_users[0].get("user_identifier")),
         json={
             "user_name":"tester"
         },
@@ -396,6 +429,30 @@ def test_update_attendee_negative(client):
     # what we assume we got in the response
     assert result.status_code == 415
 
+    result = client.put(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0].get("user_identifier")),
+        json={
+            "user_name": "testing"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[0].get("user_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    result = client.put(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[1].get("user_identifier")),
+        json={
+            "user_name": "testing"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[1].get("user_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 409
 
 def test_delete_attendee_positive(client):
     # with user_token
