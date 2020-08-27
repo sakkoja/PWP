@@ -326,8 +326,6 @@ class EventItem(Resource):
             response_json["description"] = event_data.description
             response_json["image"] = event_data.image
             return response_json, 200
-        except AttributeError:
-            return "Event not found", 404
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "General error o7, please contact administrators", 400
 

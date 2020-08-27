@@ -203,7 +203,12 @@ def test_update_event_positive(client):
     result = client.put(
         event_url(test_events[1].get("identifier")),
         json={
-            "title": "new-title"
+            "title": "new-title",
+            "time": "2020-03-03T00:00:00+0200",
+            "location": "new-location",
+            "creator_name": "new-name",
+            "description": "new-description",
+            "image": "http://bing.com"
         },
         headers={
             "Authorization": "Basic " + test_events[1].get("creator_token")
@@ -227,6 +232,34 @@ def test_update_event_negative(client):
     print(result.json)
     assert result.status_code == 401
 
+    result = client.put(
+        event_url(test_events[1].get("identifier")),
+        json={
+            "title": "new-title",
+            "time": "this time is too long for our JSON schema"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    assert result.status_code == 415
+
+    result = client.put(
+        event_url("wrong_identifier"),
+        json={
+            "title": "new-title"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    assert result.status_code == 404
+
+
 def test_delete_event_positive(client):
     result = client.delete(
         event_url(test_events[1].get("identifier")),
@@ -247,7 +280,7 @@ def test_delete_event_negative(client):
     print(result)
     assert result.status_code == 401
     result = client.delete(
-        event_url(test_events[1].get("wrong_identifier")),
+        event_url(test_events[1].get("wrong-identifier")),
         headers={
             "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
         }
@@ -260,7 +293,11 @@ def test_register_attendee_positive(client):
     result = client.post(
         event_attendees_url(test_events[0].get("identifier")),
         json={
-            "user_name":"tester"
+            "user_name":"tester",
+            "first_name": "first-tester",
+            "last_name": "last-tester",
+            "email": "test-email",
+            "phone": "test-phone"
         }
     )
     print(result)
@@ -296,7 +333,11 @@ def test_update_attendee_positive(client):
     result = client.put(
         event_specific_attendee_url(test_events[0].get("identifier"), test_users[0].get("user_identifier")),
         json={
-            "last_name":"tester"
+            "user_name": "new-name",
+            "first_name": "new-first",
+            "last_name": "new-last",
+            "email": "new-email",
+            "phone": "new-phone"
         },
         headers={
             "Authorization": "Basic " + test_users[0].get("user_token")
@@ -310,17 +351,48 @@ def test_update_attendee_positive(client):
 
 
 def test_update_attendee_negative(client):
-    result = client.post(
-        event_attendees_url(test_events[0].get("identifier")),
+    result = client.put(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0].get("user_identifier")),
         json={
             "user_name":"tester"
+        },
+        headers={
+            "Authorization": "Basic " + "probably-not-the-toke-you-were-looking-for"
         }
     )
     print(result)
     print(result.json)
     # what we assume we got in the response
-    for assumed in ["user_token", "user_identifier"]:
-        assert assumed in result.json
+    assert result.status_code == 401
+
+    result = client.put(
+        event_specific_attendee_url("wrong-identifier", "wrong-identifier"),
+        json={
+            "user_name":"tester"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[0].get("user_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 404
+
+    result = client.put(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0].get("user_identifier")),
+        json={
+            "user_name":"tester",
+            "phone": "this phone number is too long for our JSON schema to not notice"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[0].get("user_token")
+        }
+    )
+    print(result)
+    print(result.json)
+    # what we assume we got in the response
+    assert result.status_code == 415
 
 
 def test_delete_attendee_positive(client):
