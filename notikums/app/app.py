@@ -714,7 +714,6 @@ class AttendeeItem(Resource):
 
         # check authentication, continue if request contains correct creator_token or user_token
         if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            user_item = User.query.filter_by(user_identifier=attendee_id).first()
             if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
                 return "Authentication failed", 401
 
@@ -725,7 +724,7 @@ class AttendeeItem(Resource):
 
                 # check for duplicate usernames within event
                 for attendee in event_item.attendees:
-                    if request.json["user_name"] == attendee.user_name:
+                    if ((request.json["user_name"] == attendee.user_name) & (request.json["user_name"] != user_item.user_name)):
                         return "Username is in use", 409
                 user_item.user_name = request.json["user_name"]
 
