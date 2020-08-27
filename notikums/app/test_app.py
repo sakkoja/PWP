@@ -100,7 +100,8 @@ def client():
 
 def test_get_root(client):
     resp = client.get("/")
-    assert resp.status_code == 200
+    assert resp.status_code == 302
+    assert resp.headers["Location"] == "https://notikums.docs.apiary.io/#"
 
 def test_get_event_collection_positive(client):
     resp = client.get(EVENT_RESOURCE_URL)
@@ -210,7 +211,7 @@ def test_update_event_positive(client):
     )
     print(result)
     print(result.json)
-    assert result.status_code == 201
+    assert result.status_code == 200
 
 def test_update_event_negative(client):
     result = client.put(
