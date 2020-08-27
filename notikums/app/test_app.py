@@ -81,7 +81,8 @@ def _populate_db():
         test_users.append(user.as_dict())
     app.db.session.commit()
 
-@pytest.fixture
+
+@pytest.fixture(scope="function")
 def client():
     db_fd, db_fname = tempfile.mkstemp()
 
@@ -397,31 +398,53 @@ def test_update_attendee_negative(client):
 
 
 def test_delete_attendee_positive(client):
-    result = client.post(
-        event_attendees_url(test_events[0].get("identifier")),
-        json={
-            "user_name":"tester"
+    # with user_token
+    result = client.delete(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_users[0]["user_token"]
         }
     )
     print(result)
-    print(result.json)
-    # what we assume we got in the response
-    for assumed in ["user_token", "user_identifier"]:
-        assert assumed in result.json
+    assert result.status_code == 204
+    # with creator_token
+    result = client.delete(
+        event_specific_attendee_url(test_events[1].get("identifier"), test_users[1]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_events[1]["creator_token"]
+        }
+    )
+    print(result)
+    assert result.status_code == 204
 
 
 def test_delete_attendee_negative(client):
-    result = client.post(
-        event_attendees_url(test_events[0].get("identifier")),
-        json={
-            "user_name":"tester"
+    # wrong token
+    result = client.delete(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + "probably_not_the_token_you_were_looking_for"
         }
     )
     print(result)
-    print(result.json)
-    # what we assume we got in the response
-    for assumed in ["user_token", "user_identifier"]:
-        assert assumed in result.json
+    assert result.status_code == 401
+    # not found
+    result = client.delete(
+        event_specific_attendee_url("inexistent-event", test_users[0]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_events[0]["creator_token"]
+        }
+    )
+    print(result)
+    assert result.status_code == 404
+    result = client.delete(
+        event_specific_attendee_url(test_events[0].get("identifier"), "inexistent-attendee"),
+        headers={
+            "Authorization": "Basic " + test_events[0]["creator_token"]
+        }
+    )
+    print(result)
+    assert result.status_code == 404
 
 
 def test_get_single_attendee_positive(client):
