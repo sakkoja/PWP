@@ -387,7 +387,7 @@ class EventItem(Resource):
             response_json["creator_name"] = event_data.creator_name
             response_json["description"] = event_data.description
             response_json["image"] = event_data.image
-            return response_json, 201
+            return response_json, 200
         except (KeyError, ValueError, IntegrityError, OperationalError):
             return "General error o7, please contact administrators", 400
 
@@ -745,7 +745,7 @@ class AttendeeItem(Resource):
             response_json["last_name"] = user_item.last_name
             response_json["email"] = user_item.email
             response_json["phone"] = user_item.phone
-            return response_json, 201
+            return response_json, 200
         except (KeyError, ValueError, OperationalError):
             return "General error o7, please contact administrators", 400
 
