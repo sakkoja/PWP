@@ -175,9 +175,6 @@ class Event(db.Model):
     def as_dict(self):
        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-# init db
-def initialize_empty_database():
-    db.create_all()
 
 # define resources
 class ApiRoot(Resource):
@@ -299,13 +296,11 @@ class EventItem(Resource):
 
     def get(self, event_id):
         """get specific event by id as JSON array"""
-
-        # check if event exists and continue
-        event_data = Event.query.filter_by(identifier=event_id).first()
-        if not event_data:
-            return "Event not found", 404
-
         try:
+            # check if event exists and continue
+            event_data = Event.query.filter_by(identifier=event_id).first()
+            if not event_data:
+                return "Event not found", 404
             response_template = json.dumps(
                 {
                     "title":"",
@@ -336,16 +331,16 @@ class EventItem(Resource):
         if not request.json or not validate_json(request.json, put_event_schema()):
             return "Request content type must be JSON", 415
 
-        # check if event exists and continue
-        event_data = Event.query.filter_by(identifier=event_id).first()
-        if not event_data:
-            return "Event not found", 404
-
-        # check authentication
-        if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
-            return "Authorization failed", 401
-
         try:
+
+            # check if event exists and continue
+            event_data = Event.query.filter_by(identifier=event_id).first()
+            if not event_data:
+                return "Event not found", 404
+
+            # check authentication
+            if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
+                return "Authorization failed", 401
 
             # check if request contains info and save the info
             if "title" in request.json:
@@ -391,17 +386,16 @@ class EventItem(Resource):
 
     def delete(self, event_id):
         """delete event, requires creator token as header"""
-
-        # check if event exists and continue
-        event_data = Event.query.filter_by(identifier=event_id).first()
-        if not event_data:
-            return "Event not found", 404
-
-        # check authentication
-        if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
-            return "Authorization failed", 401
-
         try:
+            # check if event exists and continue
+            event_data = Event.query.filter_by(identifier=event_id).first()
+            if not event_data:
+                return "Event not found", 404
+
+            # check authentication
+            if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
+                return "Authorization failed", 401
+
             for attendee in event_data.attendees:
                 User.query.filter_by(user_identifier=attendee.user_identifier).delete()
             Event.query.filter_by(identifier=event_id).delete()
@@ -480,16 +474,16 @@ class AttendeeCollection(Resource):
     def get(self, event_identifier):
         """get list of all attendees to specific event as JSON array"""
 
-        # check if event exists and continue
-        event_item = Event.query.filter_by(identifier=event_identifier).first()
-        if not event_item:
-            return "Event not found", 404
-
-        # check authentication
-        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            return "Authentication failed", 401
-
         try:
+            # check if event exists and continue
+            event_item = Event.query.filter_by(identifier=event_identifier).first()
+            if not event_item:
+                return "Event not found", 404
+
+            # check authentication
+            if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+                return "Authentication failed", 401
+
             response_data = []
             response_template = json.dumps(
                 {
@@ -517,16 +511,15 @@ class AttendeeCollection(Resource):
     def post(self, event_identifier):
         """create new attendee to specific event"""
 
-        # check if event exists and continue
-        event_item = Event.query.filter_by(identifier=event_identifier).first()
-        if not event_item:
-            return "Event not found", 404
-
         # check if request is json and follows correct schema
         if not request.json or not validate_json(request.json, post_user_schema()):
             return "Request content type must be JSON", 415
 
         try:
+            # check if event exists and continue
+            event_item = Event.query.filter_by(identifier=event_identifier).first()
+            if not event_item:
+                return "Event not found", 404
 
             # create dict with empty values for all keys
             attendee_info = {"user_identifier": "", "user_token": "", "user_name": "", "first_name": "", "last_name": "", "email": "", "phone": ""}
@@ -656,23 +649,22 @@ class AttendeeItem(Resource):
 
     def get(self, event_identifier, attendee_id):
         """get information of one attendee as JSON array"""
-
-        # check if event exists and continue
-        event_item = Event.query.filter_by(identifier=event_identifier).first()
-        if not event_item:
-            return "Event not found", 404
-
-        # check if user exists and continue
-        user_item = User.query.filter_by(user_identifier=attendee_id).first()
-        if not user_item:
-            return "User not found", 404
-
-        # check authentication, continue if request contains correct creator_token or user_token
-        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
-                return "Authentication failed", 401
-
         try:
+            # check if event exists and continue
+            event_item = Event.query.filter_by(identifier=event_identifier).first()
+            if not event_item:
+                return "Event not found", 404
+
+            # check if user exists and continue
+            user_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not user_item:
+                return "User not found", 404
+
+            # check authentication, continue if request contains correct creator_token or user_token
+            if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+                if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
+                    return "Authentication failed", 401
+
             response_template = json.dumps(
                 {
                     "user_identifier":"",
@@ -702,22 +694,21 @@ class AttendeeItem(Resource):
         if not request.json or not validate_json(request.json, put_user_schema()):
             return "Request content type must be JSON", 415
 
-        # check if event exists and continue
-        event_item = Event.query.filter_by(identifier=event_identifier).first()
-        if not event_item:
-            return "Event not found", 404
-
-        # check if user exists and continue
-        user_item = User.query.filter_by(user_identifier=attendee_id).first()
-        if not user_item:
-            return "User not found", 404
-
-        # check authentication, continue if request contains correct creator_token or user_token
-        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
-                return "Authentication failed", 401
-
         try:
+            # check if event exists and continue
+            event_item = Event.query.filter_by(identifier=event_identifier).first()
+            if not event_item:
+                return "Event not found", 404
+
+            # check if user exists and continue
+            user_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not user_item:
+                return "User not found", 404
+
+            # check authentication, continue if request contains correct creator_token or user_token
+            if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+                if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
+                    return "Authentication failed", 401
 
             # check if request contains information and save that info to dict
             if "user_name" in request.json:
@@ -765,21 +756,21 @@ class AttendeeItem(Resource):
     def delete(self, event_identifier, attendee_id):
         """delete participation, requires """
 
-        # check if event exists and continue
-        event_item = Event.query.filter_by(identifier=event_identifier).first()
-        user_item = User.query.filter_by(user_identifier=attendee_id).first()
-        if not event_item:
-            return "Event not found", 404
-
-        # check authentication, continue if request contains correct creator_token or user_token
-        if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
-            if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
-                return "Authentication failed", 401
-
-        if not user_item:
-            return "User not found", 404
-
         try:
+            # check if event exists and continue
+            event_item = Event.query.filter_by(identifier=event_identifier).first()
+            user_item = User.query.filter_by(user_identifier=attendee_id).first()
+            if not event_item:
+                return "Event not found", 404
+
+            # check authentication, continue if request contains correct creator_token or user_token
+            if not authenticate_user(request.headers.get("Authorization"), event_item.creator_token):
+                if not authenticate_user(request.headers.get("Authorization"), user_item.user_token):
+                    return "Authentication failed", 401
+
+            if not user_item:
+                return "User not found", 404
+
             test = User.query.filter_by(user_identifier=attendee_id).delete()
             db.session.commit()
             return "OK", 204
@@ -909,12 +900,13 @@ class EventImage(Resource):
         """add or modify image of event"""
         if not request.json or not validate_json(request.json, image_post_schema()):
             return "Request content type must be JSON", 415
-        event = Event.query.filter_by(identifier=event_id).first()
-        if not event:
-            return "Not Found", 404
-        if not authenticate_user(request.headers.get("Authorization"), event.creator_token):
-            return "invalid token", 401
         try:
+            event = Event.query.filter_by(identifier=event_id).first()
+            if not event:
+                return "Not Found", 404
+            if not authenticate_user(request.headers.get("Authorization"), event.creator_token):
+                return "invalid token", 401
+
             event.image = request.json["image"]
             db.session.add(event)
             db.session.commit()
@@ -954,8 +946,8 @@ class EventImage(Resource):
             db.session.add(event)
             db.session.commit()
             return "OK", 204
-        except AttributeError:
-            return "Event not found", 404
+        except (AttributeError, KeyError):
+            return "Bad Request - https://http.cat/400", 400
 
 db.create_all()
 api.add_resource(ApiRoot, "/")

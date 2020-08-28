@@ -3,6 +3,7 @@ pySQLite3==0.4.3
 Flask-SQLAlchemy==2.4.3
 pytest
 pytest-cov
+pytest-mock
 sqlalchemy
 flask_restful
 jsonschema

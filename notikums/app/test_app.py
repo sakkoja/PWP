@@ -2,6 +2,7 @@ import os
 import pytest
 import tempfile
 import app
+from unittest.mock import MagicMock
 
 from app import User, Event
 from datetime import datetime
@@ -97,6 +98,14 @@ def client():
     app.db.session.remove()
     os.close(db_fd)
     os.unlink(db_fname)
+
+
+@pytest.fixture(scope="function")
+def mock_general_error(mocker):
+    # make queries etc. return KeyError which should be caught by all app methods and handled as 400
+    # mocker.patch("app.db", side_effect=KeyError("mocked error"))
+    mocker.patch("flask_sqlalchemy._QueryProperty.__get__", side_effect=KeyError("mocked error"))
+    # mocker.patch("app.User", side_effect=KeyError("mocked error"))
 
 # tests
 
@@ -676,3 +685,116 @@ def test_delete_image_negative(client):
     print(result)
     # what we assume we got in the response
     assert result.status_code == 404
+
+
+def test_general_error(client, mock_general_error):
+    # get all events
+    assert client.get(EVENT_RESOURCE_URL).status_code == 400
+    # create event
+    assert client.post(
+        EVENT_RESOURCE_URL,
+        json={
+            "title":"eventti",
+            "time":"2020-02-02T00:00:00+0200",
+            "location":"Tellus",
+            "creator_name":"sakkoja",
+            "description":"this is an event",
+            "image":"http://google.com"
+        }
+    ).status_code == 400
+    # get specific event
+    assert client.get(event_url(test_events[0]["identifier"])).status_code == 400
+    # update event
+    assert client.put(
+        event_url(test_events[1].get("identifier")),
+        json={
+            "title": "new-title",
+            "time": "2020-03-03T00:00:00+0200",
+            "location": "new-location",
+            "creator_name": "new-name",
+            "description": "new-description",
+            "image": "http://bing.com"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    ).status_code == 400
+    # delete event
+    assert client.delete(
+        event_url(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    ).status_code == 400
+    # all attendees
+    assert client.get(
+        event_attendees_url(test_events[-1]["identifier"]),
+        headers={
+            "Authorization": "Basic " + test_events[-1]["creator_token"]
+        }
+    ).status_code == 400
+    # create attendee / "register"
+    assert client.post(
+        event_attendees_url(test_events[0].get("identifier")),
+        json={
+            "user_name": "tester",
+            "first_name": "first-tester",
+            "last_name": "last-tester",
+            "email": "test-email",
+            "phone": "test-phone"
+        }
+    ).status_code == 400
+    # specific attendee
+    assert client.get(
+        event_specific_attendee_url(test_events[-1]["identifier"], test_users[-1]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_users[-1]["user_token"]
+        }
+    ).status_code == 400
+    # update specific attendee
+    assert client.put(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0].get("user_identifier")),
+        json={
+            "user_name": "new-name",
+            "first_name": "new-first",
+            "last_name": "new-last",
+            "email": "new-email",
+            "phone": "new-phone"
+        },
+        headers={
+            "Authorization": "Basic " + test_users[0].get("user_token")
+        }
+    ).status_code == 400
+    assert client.delete(
+        event_specific_attendee_url(test_events[0].get("identifier"), test_users[0]["user_identifier"]),
+        headers={
+            "Authorization": "Basic " + test_users[0]["user_token"]
+        }
+    ).status_code == 400
+    assert client.get(
+        event_time(test_events[0]["identifier"])
+    ).status_code == 400
+    assert client.get(
+        event_location(test_events[0]["identifier"])
+    ).status_code == 400
+    assert client.get(
+        event_description(test_events[0]["identifier"])
+    ).status_code == 400
+    assert client.get(
+        event_image(test_events[0]["identifier"])
+    ).status_code == 400
+    assert client.post(
+        event_image(test_events[1]["identifier"]),
+        json={
+            "image": "http://newimagelocation.org"
+        },
+        headers={
+            "Authorization": "Basic " + test_events[1]["creator_token"]
+        }
+    ).status_code == 400
+    assert client.delete(
+        event_image(test_events[1]["identifier"]),
+        headers={
+            "Authorization": "Basic " + test_events[1]["creator_token"]
+        }
+    ).status_code == 400
