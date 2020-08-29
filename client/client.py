@@ -36,39 +36,34 @@ API_URL = "http://127.0.0.1:5000"
 
 def get_events():
     """Gets list of all events"""
-
     resp = requests.get(API_URL + "/event")
     body = resp.json()
     for event in body:
-        print("Identifier: " + event["identifier"])
-        print("Title: " + event["title"])
-        print("Location: " + event["location"])
-        print("Time: " + event["time"])
-        print("Creator: " + event["creator_name"])
-        print("Description: " + event["description"])
-        print("Image: " + event["image"])
+        print("Identifier: {}".format(event["identifier"]))
+        print("Title: {}".format(event["title"]))
+        print("Location: {}".format(event["location"]))
+        print("Time: {}".format(event["time"]))
+        print("Creator: {}".format(event["creator_name"]))
+        print("Description: {}".format(event["description"]))
+        print("Image: {}".format(event["image"]))
         print("--------------------")
     return
 
-#testing
-get_events()
 
 def get_single_event(event_id):
     """Get data for specific event"""
     resp = requests.get(API_URL + "/event/{}".format(event_id))
     event = resp.json()
-    print("Event " + event["identifier"] + " information")
-    print("Title: " + event["title"])
-    print("Location: " + event["location"])
-    print("Time: " + event["time"])
-    print("Creator: " + event["creator_name"])
-    print("Description: " + event["description"])
-    print("Image: " + event["image"])
+    print("Identifier: {}".format(event["identifier"]))
+    print("Title: {}".format(event["title"]))
+    print("Location: {}".format(event["location"]))
+    print("Time: {}".format(event["time"]))
+    print("Creator: {}".format(event["creator_name"]))
+    print("Description: {}".format(event["description"]))
+    print("Image: {}".format(event["image"]))
     print("--------------------")
     return
 
-#testing
-get_single_event("AA1KGJ08")
 
 def create_event():
     """Creates a new event based on user input"""
@@ -82,7 +77,7 @@ def create_event():
         print("Title is required.")
         continue
 
-    while True:
+    while True: #TODO: validate time format
         event_time = input("Time in ISO8601 format (yyyy-mm-ddT00:00:00+0000): ")
         if event_time:
             event_item["time"] = event_time
@@ -105,16 +100,52 @@ def create_event():
     event_image = input("Image URL: ")
     event_item["image"] = event_image
 
-    print(event_item)
-    return requests.post(API_URL + "/event", data=json.dumps(event_item), headers={"Content-type": "application/json"})
+    resp = requests.post(API_URL + "/event", data=json.dumps(event_item), headers={"Content-type": "application/json"})
+    event = resp.json()
 
-#testing
-resp = create_event()
-print(resp)
+    print("Identifier: {}".format(event["identifier"]))
+    print("Creator token: {}".format(event["creator_token"]))
+    print("Title: {}".format(event["title"]))
+    print("Location: {}".format(event["location"]))
+    print("Time: {}".format(event["time"]))
+    print("Creator: {}".format(event["creator_name"]))
+    print("Description: {}".format(event["description"]))
+    print("Image: {}".format(event["image"]))
+    print("--------------------")
+    return
+
 
 def modify_event(event_id, creator_token):
     """Modify previously created event"""
-    pass
+    event_item = {}
+
+    event_title = input("Title: ")
+    event_item["title"] = event_title
+    event_time = input("Time in ISO8601 format (yyyy-mm-ddT00:00:00+0000): ")
+    event_item["time"] = event_time
+    event_location = input("Location: ")
+    event_item["location"] = event_location
+    event_creator_name = input("Creator: ")
+    event_item["creator_name"] = event_creator_name
+    event_description = input("Description: ")
+    event_item["description"] = event_description
+    event_image = input("Image URL: ")
+    event_item["image"] = event_image
+
+    resp = requests.put(API_URL + "/event", data=json.dumps(event_item), headers={"Content-type": "application/json", "Authorization": "Basic {}".format(creator_token)})
+    event = resp.json()
+
+    print("Identifier: {}".format(event["identifier"]))
+    print("Creator token: {}".format(event["creator_token"]))
+    print("Title: {}".format(event["title"]))
+    print("Location: {}".format(event["location"]))
+    print("Time: {}".format(event["time"]))
+    print("Creator: {}".format(event["creator_name"]))
+    print("Description: {}".format(event["description"]))
+    print("Image: {}".format(event["image"]))
+    print("--------------------")
+    return
+
 
 def delete_event(event_id, creator_token):
     """Delete previously created event"""
@@ -177,3 +208,39 @@ def get_event_time(event_id):
     event = resp.json()
     print("Time: " + event["time"])
     return
+
+
+
+# TEST EVENT RESPONSE JSON
+# {
+#     'creator_token': 'ORDCXHZNMOZN7FKC8503XI1RQ2RQTCGHDO9MGFSQLD2MV0WYVJHNGGK639P9T89I',
+#     'title': 'TITLE2',
+#     'identifier': 'WUQFSS9V',
+#     'time': '2020-08-08T00:00:00',
+#     'location': 'LOCATION2',
+#     'creator_name': 'CREATOR2',
+#     'description': 'DESCRIPTION2',
+#     'image': 'URL2'
+# }
+
+#testing
+TEST_EVENT_ID = "WUQFSS9V"
+TEST_CREATOR_TOKEN = "ORDCXHZNMOZN7FKC8503XI1RQ2RQTCGHDO9MGFSQLD2MV0WYVJHNGGK639P9T89I"
+
+get_events()
+
+get_single_event(TEST_EVENT_ID)
+
+#create_event()
+
+modify_event(TEST_EVENT_ID, TEST_CREATOR_TOKEN)
+
+get_event_attendees(TEST_EVENT_ID, TEST_CREATOR_TOKEN)
+
+get_event_description(TEST_EVENT_ID)
+
+get_event_image(TEST_EVENT_ID)
+
+get_event_location(TEST_EVENT_ID)
+
+get_event_time(TEST_EVENT_ID)
