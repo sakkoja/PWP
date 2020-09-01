@@ -280,6 +280,23 @@ def test_delete_event_positive(client):
     )
     print(result)
     assert result.status_code == 204
+    # make sure that other events users weren't deleted
+    result = client.get(
+        event_attendees_url(test_events[0].get("identifier")),
+        headers={
+            "Authorization": "Basic " + test_events[0].get("creator_token")
+        }
+    )
+    assert result.json[0]
+    # also check that the event is not found anymore
+    result = client.get(
+        event_attendees_url(test_events[1].get("identifier")),
+        headers={
+            "Authorization": "Basic " + test_events[1].get("creator_token")
+        }
+    )
+    assert result.status_code == 404
+
 
 def test_delete_event_negative(client):
     result = client.delete(

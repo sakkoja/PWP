@@ -143,7 +143,7 @@ def put_user_schema():
 # create db model for users
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey("event.id"))
+    event_id = db.Column(db.Integer, db.ForeignKey("event.id", ondelete='CASCADE'))
     user_identifier = db.Column(db.String(8), unique=True, nullable=False) #this is exposed in API to identify users
     user_token = db.Column(db.String(64), nullable=False)
     user_name = db.Column(db.String(64), nullable=False)
@@ -396,8 +396,8 @@ class EventItem(Resource):
             if not authenticate_user(request.headers.get("Authorization"), event_data.creator_token):
                 return "Authorization failed", 401
 
-            for attendee in event_data.attendees:
-                User.query.filter_by(user_identifier=attendee.user_identifier).delete()
+            # for attendee in event_data.attendees:  # hacky way of deleting users of the event
+            #     User.query.filter_by(user_identifier=attendee.user_identifier).delete()
             Event.query.filter_by(identifier=event_id).delete()
             db.session.commit()
             return "OK", 204
