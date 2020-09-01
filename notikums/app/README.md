@@ -4,6 +4,9 @@ Notikums - event organizing API
 How to run:
 -----------
 ```
+# create and use a virtual env (recommended)
+# install the requirements
+pip install -r requirements.txt
 FLASK_APP=app.py FLASK_ENV=development flask run
 ```
 after which the application can be accessed through e.g. the Web Browser.
