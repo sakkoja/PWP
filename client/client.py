@@ -1,10 +1,6 @@
-import json, datetime, requests, string, re
+import json, datetime, requests, string
 
 API_URL = "http://127.0.0.1:5000"
-
-#testing
-TEST_EVENT_ID = "WUQFSS9V"
-TEST_CREATOR_TOKEN = "ORDCXHZNMOZN7FKC8503XI1RQ2RQTCGHDO9MGFSQLD2MV0WYVJHNGGK639P9T89I"
 
 
 def menu():
@@ -13,18 +9,19 @@ def menu():
     print("Welcome to use Notikums, the ultimate event management platform!\n")
     while True:
         print("\n\n--------------------------------")
-        print("Select 1 to get list of all events")
-        print("Select 2 to get information about a specific event")
-        print("Select 3 to create a new event")
-        print("Select 4 to modify or delete event")
-        print("Select 5 to list event attendees")
-        print("Select 6 to join event")
-        print("Select 7 to modify participation info or leave event")
-        print("Select 8 to get information about a specific attendee")
-        print("Select Q to quit program")
+        print("1) to get list of all events")
+        print("2) to get information about a specific event")
+        print("3) to create a new event")
+        print("4) to modify or delete event")
+        print("5) to list event attendees")
+        print("6) to join event")
+        print("7) to modify participation info or leave event")
+        print("8) to get information about a specific attendee")
+        print("9) to delete previously created event")
+        print("Q) to quit program")
         print("--------------------------------")
 
-        choice = input ("What do you want to do? ")
+        choice = input("What do you want to do? ")
 
         if choice == "1":
             get_events()
@@ -44,6 +41,8 @@ def menu():
             #delete_attendee()
         elif choice == "8":
             get_attendee()
+        elif choice == "9":
+            delete_event()
         elif choice.lower() == "q":
             break
         else:
@@ -53,9 +52,11 @@ def menu():
 def get_events():
     """Gets list of all events"""
     resp = requests.get(API_URL + "/event")
+    print("--------------------------------")
+    print("All events")
+    print("--------------------------------")
     body = resp.json()
     for event in body:
-        print("--------------------------------")
         print("Identifier: {}".format(event["identifier"]))
         print("Title: {}".format(event["title"]))
         print("Location: {}".format(event["location"]))
@@ -63,7 +64,7 @@ def get_events():
         print("Creator: {}".format(event["creator_name"]))
         print("Description: {}".format(event["description"]))
         print("Image: {}".format(event["image"]))
-    print("--------------------------------")
+        print("--------------------------------")
     return
 
 
@@ -444,7 +445,7 @@ def modify_attendee():
     print("Something went wrong! Make sure the user information is given in the correct form.\n")
     return
 
-
+# not implemented
 def delete_attendee():
     """Delete previously created attending information for specific user in specific event"""
 
@@ -476,20 +477,24 @@ def delete_attendee():
         print("Failure! Attendee was not deleted.\n")
 
 
+# not implemented
 def get_event_image(event_id):
     """Get image for single event by event_id"""
     resp = requests.get(API_URL + "/event/{}/image".format(event_id))
     event = resp.json()
     print("Image: " + event["image"])
 
+# not implemented
 def add_event_image(event_id, creator_token):
     """Add or change image for specific event"""
     print("not implemented (yet)\n")
 
+# not implemented
 def delete_event_image(event_id, creator_token):
     """Delete image from specific event"""
     print("not implemented (yet)\n")
 
+# not implemented
 def get_event_description(event_id):
     """Get description for single event by event_id"""
     resp = requests.get(API_URL + "/event/{}/description".format(event_id))
@@ -497,7 +502,7 @@ def get_event_description(event_id):
     print("Description: " + event["description"])
     return
 
-
+# not implemented
 def get_event_location(event_id):
     """Get location for single event by event_id"""
     resp = requests.get(API_URL + "/event/{}/location".format(event_id))
@@ -505,7 +510,7 @@ def get_event_location(event_id):
     print("Location: " + event["location"])
     return
 
-
+# not implemented
 def get_event_time(event_id):
     """Get time for single event by event_id"""
     resp = requests.get(API_URL + "/event/{}/time".format(event_id))
@@ -515,38 +520,3 @@ def get_event_time(event_id):
 
 
 menu()
-
-
-# TEST EVENT RESPONSE JSON
-# {
-#     'creator_token': 'ORDCXHZNMOZN7FKC8503XI1RQ2RQTCGHDO9MGFSQLD2MV0WYVJHNGGK639P9T89I',
-#     'title': 'TITLE2',
-#     'identifier': 'WUQFSS9V',
-#     'time': '2020-08-08T00:00:00',
-#     'location': 'LOCATION2',
-#     'creator_name': 'CREATOR2',
-#     'description': 'DESCRIPTION2',
-#     'image': 'URL2'
-# }
-
-
-# Mock event
-# Success! Event created
-# Identifier: FY1T97Y9
-# Creator token: AANQQMO6C1MQ2BTDXATV6M4VXB9TSY9HFCUBDAZ6G289ZN0S7P87ZISGRA440ZVA
-# Title: 12
-# Location: as
-# Time: 2020-01-01T00:00:00
-# Creator: 
-# Description: 
-# Image: 
-
-# Mock user
-# Success! You have joined the event.
-# Identifier: 6B6P5XGF
-# User token: NWT922ORCKV6FZZ9S4PFELRIMERB7R5KJ5MEVB1W5W2MK3R4565KPCOWSXZYHAHF
-# Username: Latsis
-# First name: lauri
-# Last name: meikä
-# Email: hotmail.com
-# Phone: 
